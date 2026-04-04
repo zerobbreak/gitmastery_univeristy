@@ -1,0 +1,167 @@
+@import "tailwindcss";
+
+/* Fonts */
+@import "@fontsource-variable/geist-mono";
+@import "@fontsource-variable/space-grotesk";
+
+@theme {
+  --font-display: "Space Grotesk Variable", sans-serif;
+  --font-mono: "Geist Mono Variable", monospace;
+  --font-body: "Inter", sans-serif;
+
+  /* Semantic Color Tokens (OKLCH mapping to CSS variables) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  /* Terminal Luminary Custom Tokens & Layout Utilities */
+  --color-surface: var(--card);
+  --color-on-surface: var(--foreground);
+  --color-on-surface-variant: var(--muted-foreground);
+  --color-surface-dim: oklch(0.18 0.02 260);
+  --color-surface-bright: oklch(0.3 0.03 260);
+  --color-surface-container-lowest: oklch(0.12 0.015 260);
+  --color-surface-container-low: oklch(0.18 0.02 260);
+  --color-surface-container-high: oklch(0.22 0.02 260);
+  --color-surface-container-highest: oklch(0.28 0.03 260);
+  --color-outline-variant: oklch(0.3 0.03 260 / 30%);
+
+  --color-glow-primary: oklch(0.7 0.2 250 / 15%);
+  --color-glow-secondary: oklch(0.8 0.15 150 / 10%);
+  
+  /* Animations */
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  --animate-fade-in: fade-in 0.5s ease-out;
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  @keyframes cursor-pulse {
+    0%, 100% { opacity: 1; filter: brightness(1.2) drop-shadow(0_0_8px_var(--color-primary)); }
+    50% { opacity: 0.2; filter: brightness(1) drop-shadow(0_0_0px_var(--color-primary)); }
+  }
+  --animate-cursor-pulse: cursor-pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@layer base {
+  :root {
+    /* Dark Mode as Default (Terminal Luminary Aesthetic) */
+    --background: oklch(0.12 0.015 260); /* Deep Space */
+    --foreground: oklch(0.98 0.005 260);
+    
+    --card: oklch(0.15 0.02 260);
+    --card-foreground: oklch(0.98 0.005 260);
+    
+    --popover: oklch(0.15 0.02 260);
+    --popover-foreground: oklch(0.98 0.005 260);
+    
+    --primary: oklch(0.7 0.2 250); /* Vivid Luminary Blue */
+    --primary-foreground: oklch(0.12 0.015 260);
+    
+    --secondary: oklch(0.25 0.03 260);
+    --secondary-foreground: oklch(0.98 0.005 260);
+    
+    --muted: oklch(0.25 0.03 260);
+    --muted-foreground: oklch(0.7 0.01 260);
+    
+    --accent: oklch(0.25 0.03 260);
+    --accent-foreground: oklch(0.98 0.005 260);
+    
+    --border: oklch(0.3 0.03 260 / 50%);
+    --input: oklch(0.3 0.03 260 / 50%);
+    --ring: oklch(0.7 0.2 250);
+    
+    --radius: 0.75rem; /* Slightly softer for premium look */
+  }
+
+  /* Optional: Standard Light mode if explicitly requested */
+  .light {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --primary: oklch(0.21 0.006 285.885);
+    --primary-foreground: oklch(0.985 0 0);
+    --border: oklch(0.92 0 0);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-body antialiased selection:bg-primary/20 selection:text-primary;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight font-bold;
+  }
+}
+
+@layer components {
+  .gradient-text {
+    @apply bg-linear-to-br from-foreground to-foreground/40 bg-clip-text text-transparent;
+  }
+
+  .glow-primary {
+    @apply shadow-[0_0_40px_rgba(173,198,255,0.08)] border-primary/20;
+  }
+
+  .glow-secondary {
+    @apply shadow-[0_0_60px_rgba(100,200,255,0.05)];
+  }
+
+  .ambient-shadow {
+    @apply shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)];
+  }
+
+  .glass-panel {
+    @apply bg-card/40 backdrop-blur-3xl border border-white/5;
+  }
+
+  .section-padding {
+    @apply py-24 md:py-32 lg:py-48 px-6;
+  }
+
+  .grid-bg {
+    background-image: 
+      linear-gradient(to right, oklch(0.98 0.005 260 / 3%) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(0.98 0.005 260 / 3%) 1px, transparent 1px);
+    background-size: 64px 64px;
+  }
+}
