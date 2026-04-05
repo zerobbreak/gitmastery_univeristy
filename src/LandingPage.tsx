@@ -93,8 +93,8 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col w-full selection:bg-primary/30 selection:text-primary">
       {/* Header (truncated for brevity in common use, but keeping full logic here) */}
-      <header className="fixed top-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-[1680px] z-50 px-8 py-5 rounded-[2rem] bg-surface/40 backdrop-blur-xl border border-white/5 shadow-2xl flex justify-between items-center transition-all duration-500 hover:bg-surface/60 hover:border-white/10">
-        <div className="flex items-center gap-3 font-display font-bold text-lg text-on-surface">
+      <header className="fixed top-3 sm:top-6 left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] sm:w-[calc(100%-3rem)] max-w-[1680px] z-50 px-4 sm:px-8 py-3 sm:py-5 rounded-2xl sm:rounded-[2rem] bg-surface/40 backdrop-blur-xl border border-white/5 shadow-2xl flex justify-between items-center transition-all duration-500 hover:bg-surface/60 hover:border-white/10">
+        <div className="flex items-center gap-2 sm:gap-3 font-display font-bold text-base sm:text-lg text-on-surface">
           <TerminalIcon size={20} className="text-primary" />
           <span className="tracking-tight">Git Mastery</span>
         </div>
@@ -125,24 +125,24 @@ export default function LandingPage() {
           </a>
         </nav>
         {/* Auth Buttons */}
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-2 sm:gap-4 items-center">
           <SignedOut>
             <SignInButton mode="modal">
-              <Button variant="ghost" className="text-on-surface font-semibold hover:text-primary">
+              <Button variant="ghost" className="text-on-surface font-semibold hover:text-primary hidden sm:inline-flex">
                 Log in
               </Button>
             </SignInButton>
             <SignUpButton mode="modal">
-              <Button className="font-bold hover:shadow-[0_0_20px_rgba(173,198,255,0.4)] transition-all">
+              <Button className="font-bold hover:shadow-[0_0_20px_rgba(173,198,255,0.4)] transition-all text-sm sm:text-base">
                 Join Now
               </Button>
             </SignUpButton>
           </SignedOut>
           <SignedIn>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <a href="/dashboard">
-                <Button className="font-bold hover:shadow-[0_0_20px_rgba(173,198,255,0.4)] transition-all">
-                  Go to Dashboard
+                <Button className="font-bold hover:shadow-[0_0_20px_rgba(173,198,255,0.4)] transition-all text-sm sm:text-base">
+                  Dashboard
                 </Button>
               </a>
               <UserButton />
@@ -152,37 +152,37 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden section-padding pt-48 grid-bg min-h-screen flex flex-col justify-center">
+      <section className="relative overflow-hidden section-padding pt-28 sm:pt-36 md:pt-44 lg:pt-48 grid-bg min-h-screen flex flex-col justify-center">
         {/* Glow Effects */}
         <div className="absolute top-1/4 -left-20 w-80 h-80 bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
         <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-secondary/5 rounded-full blur-[120px] pointer-events-none"></div>
 
-        <div className="max-w-[1680px] mx-auto w-full px-8 flex flex-col md:flex-row items-center justify-between gap-16 relative z-10">
+        <div className="max-w-[1680px] mx-auto w-full px-4 sm:px-8 flex flex-col md:flex-row items-center justify-between gap-10 md:gap-16 relative z-10">
           <div className="flex-1 text-left">
-            <h1 className="mb-8 text-5xl md:text-[5.5rem] font-bold leading-[1.1] tracking-tight text-balance">
+            <h1 className="mb-6 md:mb-8 text-3xl sm:text-4xl md:text-5xl lg:text-[5.5rem] font-bold leading-[1.1] tracking-tight text-balance">
               Master the Flow, <br />
               <span className="gradient-text">Automate the Chaos.</span>
             </h1>
 
-            <p className="text-xl md:text-2xl text-on-surface-variant mb-12 leading-relaxed max-w-[600px]">
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-on-surface-variant mb-8 md:mb-12 leading-relaxed max-w-[600px]">
               Bridge the gap between classroom theory and real-world codebase
               management with an immersive, gamified Git experience.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-6 mb-16">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-10 md:mb-16">
               <SignedOut>
                 <SignUpButton mode="modal">
-                  <Button size="lg" className="h-16 px-10 rounded-2xl font-bold transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(173,198,255,0.4)] flex items-center gap-3 text-lg">
+                  <Button size="lg" className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 rounded-2xl font-bold transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(173,198,255,0.4)] flex items-center gap-3 text-base md:text-lg">
                     Start Your Git Journey <ArrowRight size={20} />
                   </Button>
                 </SignUpButton>
               </SignedOut>
-              <Button variant="outline" size="lg" className="h-16 px-10 rounded-2xl font-bold bg-secondary/5 border-white/10 hover:bg-secondary/10 transition-all text-lg">
+              <Button variant="outline" size="lg" className="h-12 sm:h-14 md:h-16 px-6 sm:px-8 md:px-10 rounded-2xl font-bold bg-secondary/5 border-white/10 hover:bg-secondary/10 transition-all text-base md:text-lg">
                 View Curriculum
               </Button>
             </div>
 
-            <div className="pt-16 border-t border-outline-variant/20 hidden lg:block">
+            <div className="pt-10 md:pt-16 border-t border-outline-variant/20 hidden lg:block">
               <p className="text-[0.7rem] font-black text-on-surface-variant uppercase tracking-[0.4em] mb-8 opacity-60">
                 Trusted by elite teams at
               </p>
@@ -206,42 +206,42 @@ export default function LandingPage() {
           </div>
 
           <div className="flex-[1.2] w-full max-w-[800px]">
-            <div className="relative group p-2 rounded-[2.5rem] bg-surface-container-highest/30 backdrop-blur-sm border border-white/5 animate-fade-in glow-primary">
-              <div className="bg-surface-container-lowest rounded-4xl overflow-hidden flex flex-col shadow-2xl">
-                <div className="bg-white/5 py-4 px-6 flex items-center justify-between border-b border-white/5">
+            <div className="relative group p-1.5 sm:p-2 rounded-2xl sm:rounded-[2.5rem] bg-surface-container-highest/30 backdrop-blur-sm border border-white/5 animate-fade-in glow-primary">
+              <div className="bg-surface-container-lowest rounded-2xl sm:rounded-4xl overflow-hidden flex flex-col shadow-2xl">
+                <div className="bg-white/5 py-3 sm:py-4 px-4 sm:px-6 flex items-center justify-between border-b border-white/5">
                   <div className="flex gap-2">
-                    <span className="w-3 h-3 rounded-full bg-[#ff5f56]"></span>
-                    <span className="w-3 h-3 rounded-full bg-[#ffbd2e]"></span>
-                    <span className="w-3 h-3 rounded-full bg-[#27c93f]"></span>
+                    <span className="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-[#ff5f56]"></span>
+                    <span className="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-[#ffbd2e]"></span>
+                    <span className="w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full bg-[#27c93f]"></span>
                   </div>
-                  <div className="flex items-center gap-2 text-[0.7rem] font-mono text-on-surface-variant/60 uppercase tracking-widest">
+                  <div className="flex items-center gap-2 text-[0.6rem] sm:text-[0.7rem] font-mono text-on-surface-variant/60 uppercase tracking-widest">
                     <GitBranch size={12} className="text-primary" />{" "}
                     feature/mastery
                   </div>
                 </div>
-                <div className="p-10 font-mono text-[1.1rem] leading-relaxed text-[#dae2fd]">
-                  <div className="flex gap-4 mb-4">
+                <div className="p-4 sm:p-6 md:p-10 font-mono text-sm sm:text-base md:text-[1.1rem] leading-relaxed text-[#dae2fd]">
+                  <div className="flex gap-3 sm:gap-4 mb-3 sm:mb-4">
                     <span className="text-primary shrink-0">$</span>
-                    <span className="flex-1">
+                    <span className="flex-1 break-all sm:break-normal">
                       git checkout{" "}
                       <span className="text-secondary font-bold">
                         "feature/mastery"
                       </span>
                     </span>
                   </div>
-                  <div className="flex gap-4 mb-6">
+                  <div className="flex gap-3 sm:gap-4 mb-4 sm:mb-6">
                     <span className="text-on-surface-variant/40 shrink-0">
                       #
                     </span>
-                    <span className="text-on-surface-variant/60 italic">
+                    <span className="text-on-surface-variant/60 italic text-xs sm:text-sm md:text-base">
                       Switched to a new branch 'feature/mastery'
                     </span>
                   </div>
-                  <div className="flex gap-4 mb-8">
+                  <div className="flex gap-3 sm:gap-4 mb-5 sm:mb-8">
                     <span className="text-primary shrink-0">$</span>
                     <span className="flex-1">git status</span>
                   </div>
-                  <div className="p-6 rounded-2xl bg-surface-container-high/50 border border-white/5 mb-8">
+                  <div className="p-3 sm:p-4 md:p-6 rounded-xl sm:rounded-2xl bg-surface-container-high/50 border border-white/5 mb-5 sm:mb-8">
                     <div className="text-[0.8rem] text-secondary/80 font-bold mb-4 uppercase tracking-[0.2em]">
                       on branch mastery
                     </div>
@@ -280,12 +280,12 @@ export default function LandingPage() {
         id="features"
         className="section-padding bg-surface-container-lowest border-y border-outline-variant/20 relative"
       >
-        <div className="max-w-[1680px] mx-auto px-8">
-          <div className="text-center mb-24">
-            <h2 className="text-4xl md:text-6xl mb-6 font-bold tracking-tight">
+        <div className="max-w-[1680px] mx-auto px-4 sm:px-8">
+          <div className="text-center mb-12 sm:mb-16 md:mb-24">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl mb-4 sm:mb-6 font-bold tracking-tight">
               Engineered for Mastery.
             </h2>
-            <p className="text-on-surface-variant text-lg max-w-[700px] mx-auto leading-relaxed">
+            <p className="text-on-surface-variant text-base sm:text-lg max-w-[700px] mx-auto leading-relaxed">
               Our sandbox environments mirror the pressure and precision of a
               professional engineering team, giving you the edge in real-world
               dev cycles.
@@ -293,7 +293,7 @@ export default function LandingPage() {
           </div>
 
           <div 
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[250px] md:auto-rows-[200px] lg:auto-rows-[160px] relative"
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 auto-rows-auto md:auto-rows-[200px] lg:auto-rows-[160px] relative"
             onMouseEnter={() => setIsBentoAutoPlaying(false)}
             onMouseLeave={() => setIsBentoAutoPlaying(true)}
           >
@@ -305,7 +305,7 @@ export default function LandingPage() {
             {/* Card 1: Interactive Challenges - Large */}
             <Card 
               onClick={() => setActiveFeature(1)}
-              className={`md:col-span-2 md:row-span-2 p-8 rounded-4xl transition-all duration-700 group overflow-hidden relative flex flex-col justify-between shadow-none cursor-pointer border ${
+              className={`md:col-span-2 md:row-span-2 p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-4xl transition-all duration-700 group overflow-hidden relative flex flex-col justify-between shadow-none cursor-pointer border ${
                 activeFeature === 1 
                 ? "bg-primary/[0.08] border-primary/40 shadow-[0_0_50px_rgba(173,198,255,0.15)] ring-1 ring-primary/20 scale-[1.01]" 
                 : "bg-secondary/5 border-white/5 opacity-80"
@@ -349,7 +349,7 @@ export default function LandingPage() {
             {/* Card 2: AI Coach - Small */}
             <Card 
               onClick={() => setActiveFeature(2)}
-              className={`md:col-span-1 md:row-span-2 p-8 rounded-4xl transition-all duration-700 group overflow-hidden relative flex flex-col items-center text-center justify-center shadow-none cursor-pointer border ${
+              className={`md:col-span-1 md:row-span-2 p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-4xl transition-all duration-700 group overflow-hidden relative flex flex-col items-center text-center justify-center shadow-none cursor-pointer border ${
                 activeFeature === 2 
                 ? "bg-[#ffadd2]/[0.08] border-[#ffadd2]/40 shadow-[0_0_50px_rgba(255,173,210,0.15)] ring-1 ring-[#ffadd2]/20 scale-[1.01]" 
                 : "bg-secondary/5 border-white/5 opacity-80"
@@ -371,7 +371,7 @@ export default function LandingPage() {
             {/* Card 3: Real-World Workflows - Small */}
             <Card 
               onClick={() => setActiveFeature(3)}
-              className={`md:col-span-1 md:row-span-2 p-8 rounded-4xl transition-all duration-700 group overflow-hidden relative flex flex-col items-center text-center justify-center shadow-none cursor-pointer border ${
+              className={`md:col-span-1 md:row-span-2 p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-4xl transition-all duration-700 group overflow-hidden relative flex flex-col items-center text-center justify-center shadow-none cursor-pointer border ${
                 activeFeature === 3 
                 ? "bg-[#adffdd]/[0.08] border-[#adffdd]/40 shadow-[0_0_50px_rgba(173,255,221,0.15)] ring-1 ring-[#adffdd]/20 scale-[1.01]" 
                 : "bg-primary/5 border-white/5 opacity-80"
@@ -393,7 +393,7 @@ export default function LandingPage() {
             {/* Card 4: Gamified Progress - Large */}
             <Card 
               onClick={() => setActiveFeature(4)}
-              className={`md:col-span-2 md:row-span-2 p-8 rounded-4xl transition-all duration-700 group overflow-hidden relative flex flex-col md:flex-row gap-8 items-center shadow-none cursor-pointer border ${
+              className={`md:col-span-2 md:row-span-2 p-5 sm:p-6 md:p-8 rounded-2xl sm:rounded-4xl transition-all duration-700 group overflow-hidden relative flex flex-col md:flex-row gap-6 md:gap-8 items-center shadow-none cursor-pointer border ${
                 activeFeature === 4 
                 ? "bg-[#ffd2ad]/[0.08] border-[#ffd2ad]/40 shadow-[0_0_50px_rgba(255,210,173,0.15)] ring-1 ring-[#ffd2ad]/20 scale-[1.01]" 
                 : "bg-secondary/5 border-white/5 opacity-80"
@@ -439,15 +439,15 @@ export default function LandingPage() {
         id="path"
         className="section-padding bg-surface relative overflow-hidden"
       >
-        <div className="max-w-[1680px] mx-auto flex flex-col md:flex-row gap-12 items-stretch px-8">
+        <div className="max-w-[1680px] mx-auto flex flex-col md:flex-row gap-8 md:gap-12 items-stretch px-4 sm:px-8">
           {/* Dynamic Terminal Mockup */}
           <div
             className="flex-[1.4] w-full order-2 md:order-1 flex flex-col justify-center"
             onMouseEnter={() => setIsAutoPlaying(false)}
             onMouseLeave={() => setIsAutoPlaying(true)}
           >
-            <div className="relative p-2 rounded-[2.5rem] bg-white/5 border border-white/5 glow-primary transition-all duration-500 min-h-[460px] flex flex-col">
-              <div className="flex-1 bg-[#060e20] rounded-4xl overflow-hidden flex flex-col shadow-2xl border border-white/5">
+            <div className="relative p-1.5 sm:p-2 rounded-2xl sm:rounded-[2.5rem] bg-white/5 border border-white/5 glow-primary transition-all duration-500 min-h-[320px] sm:min-h-[380px] md:min-h-[460px] flex flex-col">
+              <div className="flex-1 bg-[#060e20] rounded-2xl sm:rounded-4xl overflow-hidden flex flex-col shadow-2xl border border-white/5">
                 {/* Terminal Header */}
                 <div className="bg-white/5 py-3 px-5 flex items-center justify-between border-b border-white/5">
                   <div className="flex gap-2">
@@ -460,7 +460,7 @@ export default function LandingPage() {
                   </div>
                 </div>
                 {/* Terminal Content */}
-                <div className="p-8 font-mono text-sm overflow-hidden flex-1 flex flex-col">
+                <div className="p-4 sm:p-6 md:p-8 font-mono text-xs sm:text-sm overflow-hidden flex-1 flex flex-col">
                   {/* Previous Commands (History) */}
                   <div className="opacity-40 line-through decoration-primary/30 space-y-4 mb-4 overflow-hidden">
                     {steps.slice(0, activeStep - 1).map((step) => (
@@ -534,10 +534,10 @@ export default function LandingPage() {
 
           {/* Interactive Steps List */}
           <div className="flex-1 order-1 md:order-2 flex flex-col justify-center">
-            <h2 className="text-4xl md:text-5xl mb-12 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-6 sm:mb-8 md:mb-12 tracking-tight">
               Your Path to Git Proficiency.
             </h2>
-            <div className="space-y-6">
+            <div className="space-y-3 sm:space-y-4 md:space-y-6">
               {steps.map((step) => (
                 <Card
                   key={step.id}
@@ -545,15 +545,15 @@ export default function LandingPage() {
                     setActiveStep(step.id);
                     setIsAutoPlaying(false);
                   }}
-                  className={`group cursor-pointer p-6 rounded-3xl transition-all duration-300 border shadow-none ${
+                  className={`group cursor-pointer p-4 sm:p-5 md:p-6 rounded-2xl sm:rounded-3xl transition-all duration-300 border shadow-none ${
                     activeStep === step.id
-                      ? "bg-primary/5 border-primary/40 translate-x-3"
-                      : "bg-transparent border-transparent hover:bg-white/5 hover:translate-x-1"
+                      ? "bg-primary/5 border-primary/40 md:translate-x-3"
+                      : "bg-transparent border-transparent hover:bg-white/5 md:hover:translate-x-1"
                   }`}
                 >
-                  <div className="flex gap-6 items-start">
+                  <div className="flex gap-3 sm:gap-4 md:gap-6 items-start">
                     <div
-                      className={`w-12 h-12 rounded-2xl border flex items-center justify-center font-mono font-bold shrink-0 transition-all ${
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl border flex items-center justify-center font-mono font-bold text-sm sm:text-base shrink-0 transition-all ${
                         activeStep === step.id
                           ? "bg-primary text-primary-foreground border-primary shadow-[0_0_15px_rgba(173,198,255,0.4)]"
                           : "bg-white/5 text-muted-foreground border-white/10 group-hover:border-primary/40"
@@ -563,7 +563,7 @@ export default function LandingPage() {
                     </div>
                     <div>
                       <h4
-                        className={`text-xl font-bold mb-2 transition-colors ${activeStep === step.id ? "text-primary" : "text-foreground"}`}
+                        className={`text-base sm:text-lg md:text-xl font-bold mb-1 sm:mb-2 transition-colors ${activeStep === step.id ? "text-primary" : "text-foreground"}`}
                       >
                         {step.title}
                       </h4>
@@ -587,20 +587,20 @@ export default function LandingPage() {
 
       {/* Professional IDE Experience Section */}
       <section className="section-padding bg-surface-container-low w-full overflow-hidden">
-        <div className="max-w-[1680px] mx-auto px-8">
-          <div className="text-center mb-16 px-4">
-            <h2 className="text-4xl md:text-5xl mb-6">
+        <div className="max-w-[1680px] mx-auto px-4 sm:px-8">
+          <div className="text-center mb-8 sm:mb-12 md:mb-16 px-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 sm:mb-6">
               A Professional IDE Experience.
             </h2>
-            <p className="text-on-surface-variant text-lg">
+            <p className="text-on-surface-variant text-base sm:text-lg">
               Designed for deep focus and technical rigor.
             </p>
           </div>
 
           <div className="relative max-w-[1680px] mx-auto">
-            <div className="rounded-[2.5rem] overflow-hidden bg-white/5 p-3 ambient-shadow border border-white/5 glow-secondary animate-fade-in">
+            <div className="rounded-2xl sm:rounded-[2.5rem] overflow-hidden bg-white/5 p-1.5 sm:p-3 ambient-shadow border border-white/5 glow-secondary animate-fade-in">
               {/* VS Code Style Mockup */}
-              <div className="bg-[#0d1117] rounded-4xl overflow-hidden flex flex-col border border-white/5 shadow-2xl h-[600px]">
+              <div className="bg-[#0d1117] rounded-2xl sm:rounded-4xl overflow-hidden flex flex-col border border-white/5 shadow-2xl h-[360px] sm:h-[450px] md:h-[520px] lg:h-[600px]">
                 {/* Editor Header / Tabs */}
                 <div className="bg-[#161b22] px-4 flex items-center justify-between border-b border-white/5">
                   <div className="flex gap-px">
@@ -619,7 +619,7 @@ export default function LandingPage() {
 
                 <div className="flex-1 flex overflow-hidden">
                   {/* Sidebar */}
-                  <div className="w-12 bg-[#161b22] flex flex-col items-center py-6 gap-8 border-r border-white/5">
+                  <div className="w-10 sm:w-12 bg-[#161b22] hidden sm:flex flex-col items-center py-4 sm:py-6 gap-6 sm:gap-8 border-r border-white/5">
                     <div className="text-primary">
                       <Code size={20} />
                     </div>
@@ -636,7 +636,7 @@ export default function LandingPage() {
 
                   {/* Editor Area */}
                   <div className="flex-1 flex flex-col bg-[#0d1117] overflow-hidden">
-                    <div className="flex-1 p-8 font-mono text-sm leading-relaxed overflow-y-auto custom-scrollbar">
+                    <div className="flex-1 p-3 sm:p-5 md:p-8 font-mono text-[0.65rem] sm:text-xs md:text-sm leading-relaxed overflow-y-auto custom-scrollbar">
                       <div className="flex gap-6">
                         <div className="text-on-surface-variant/20 text-right select-none w-4">
                           1<br />2<br />3<br />4<br />5<br />6<br />7<br />8
@@ -696,9 +696,9 @@ export default function LandingPage() {
                     </div>
 
                     {/* Integrated Terminal (Bottom) */}
-                    <div className="h-[220px] bg-[#010409] border-t border-white/10 flex flex-col">
-                      <div className="px-6 py-2 bg-white/5 flex items-center justify-between border-b border-white/5">
-                        <div className="flex gap-6 text-[0.65rem] font-bold uppercase tracking-wider text-on-surface-variant">
+                    <div className="h-[140px] sm:h-[180px] md:h-[220px] bg-[#010409] border-t border-white/10 flex flex-col">
+                      <div className="px-3 sm:px-6 py-2 bg-white/5 flex items-center justify-between border-b border-white/5">
+                        <div className="flex gap-3 sm:gap-6 text-[0.55rem] sm:text-[0.65rem] font-bold uppercase tracking-wider text-on-surface-variant">
                           <span className="text-primary border-b border-primary pb-0.5">
                             Terminal
                           </span>
@@ -710,7 +710,7 @@ export default function LandingPage() {
                           <Sparkles size={14} />
                         </div>
                       </div>
-                      <div className="p-6 font-mono text-sm flex-1 overflow-y-auto">
+                      <div className="p-3 sm:p-4 md:p-6 font-mono text-[0.65rem] sm:text-xs md:text-sm flex-1 overflow-y-auto">
                         <div className="flex gap-3 mb-2">
                           <span className="text-[#238636]">
                             dev@mastery:~/challenge
@@ -764,12 +764,12 @@ export default function LandingPage() {
 
       {/* Professor's Command Center Section */}
       <section id="universities" className="section-padding bg-surface">
-        <div className="max-w-[1680px] mx-auto flex flex-col md:flex-row gap-16 items-center px-8">
+        <div className="max-w-[1680px] mx-auto flex flex-col md:flex-row gap-10 md:gap-16 items-center px-4 sm:px-8">
           <div className="flex-1">
-            <h2 className="text-4xl md:text-5xl mb-8 tracking-tight max-w-md">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-5 sm:mb-6 md:mb-8 tracking-tight max-w-md">
               Powering the Future of CS Education.
             </h2>
-            <p className="text-lg text-on-surface-variant mb-10 leading-relaxed">
+            <p className="text-base sm:text-lg text-on-surface-variant mb-6 sm:mb-8 md:mb-10 leading-relaxed">
               Automate your grading and gain unprecedented insights into how
               students master version control proficiency.
             </p>
@@ -827,31 +827,31 @@ export default function LandingPage() {
 
           <div className="flex-[1.2] w-full relative">
             <div className="absolute inset-0 bg-primary/5 rounded-3xl blur-[100px]"></div>
-            <div className="relative bg-[#0d1117] ghost-border p-8 rounded-4xl glow-primary shadow-2xl min-h-[560px] flex flex-col">
+            <div className="relative bg-[#0d1117] ghost-border p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-4xl glow-primary shadow-2xl min-h-[400px] sm:min-h-[480px] md:min-h-[560px] flex flex-col">
               {/* Leaderboard Header */}
-              <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/5">
+              <div className="flex items-center justify-between mb-5 sm:mb-6 md:mb-8 pb-4 border-b border-white/5">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                    <Trophy size={20} />
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <Trophy size={18} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold">Class Leaderboard</h3>
+                    <h3 className="text-base sm:text-lg md:text-xl font-bold">Class Leaderboard</h3>
                     <p className="text-[0.65rem] uppercase tracking-widest text-on-surface-variant/60">
                       CS-101: Systems Programming
                     </p>
                   </div>
                 </div>
-                <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-surface-container-high border-2 border-[#0d1117] flex items-center justify-center text-[0.6rem] font-bold">
+                <div className="hidden sm:flex -space-x-2">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface-container-high border-2 border-[#0d1117] flex items-center justify-center text-[0.55rem] sm:text-[0.6rem] font-bold">
                     JD
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-primary/20 border-2 border-[#0d1117] flex items-center justify-center text-[0.6rem] font-bold text-primary">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/20 border-2 border-[#0d1117] flex items-center justify-center text-[0.55rem] sm:text-[0.6rem] font-bold text-primary">
                     AL
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-secondary/20 border-2 border-[#0d1117] flex items-center justify-center text-[0.6rem] font-bold text-secondary">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-secondary/20 border-2 border-[#0d1117] flex items-center justify-center text-[0.55rem] sm:text-[0.6rem] font-bold text-secondary">
                     MK
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-[#161b22] border-2 border-[#0d1117] flex items-center justify-center text-[0.6rem] font-bold">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#161b22] border-2 border-[#0d1117] flex items-center justify-center text-[0.55rem] sm:text-[0.6rem] font-bold">
                     +12
                   </div>
                 </div>
@@ -859,55 +859,55 @@ export default function LandingPage() {
 
               {/* Leaderboard Table */}
               <div className="flex-1 space-y-3">
-                <div className="grid grid-cols-12 gap-4 px-4 text-[0.65rem] font-bold uppercase tracking-widest text-muted-foreground/40 mb-2">
+                <div className="grid grid-cols-12 gap-2 sm:gap-4 px-2 sm:px-4 text-[0.55rem] sm:text-[0.65rem] font-bold uppercase tracking-widest text-muted-foreground/40 mb-2">
                   <div className="col-span-1">#</div>
                   <div className="col-span-6">Student</div>
-                  <div className="col-span-3">Level</div>
-                  <div className="col-span-2 text-right">XP</div>
+                  <div className="col-span-3 hidden sm:block">Level</div>
+                  <div className="col-span-5 sm:col-span-2 text-right">XP</div>
                 </div>
 
-                <div className="grid grid-cols-12 gap-4 items-center bg-white/5 p-4 rounded-2xl border border-white/5 animate-fade-in">
-                  <div className="col-span-1 text-secondary font-bold">1</div>
-                  <div className="col-span-6 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-linear-to-br from-secondary/40 to-secondary/10 flex items-center justify-center text-secondary font-bold text-xs shadow-inner">
+                <div className="grid grid-cols-12 gap-2 sm:gap-4 items-center bg-white/5 p-2.5 sm:p-3 md:p-4 rounded-xl sm:rounded-2xl border border-white/5 animate-fade-in">
+                  <div className="col-span-1 text-secondary font-bold text-xs sm:text-sm">1</div>
+                  <div className="col-span-6 flex items-center gap-2 sm:gap-3">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-linear-to-br from-secondary/40 to-secondary/10 flex items-center justify-center text-secondary font-bold text-[0.6rem] sm:text-xs shadow-inner">
                       JS
                     </div>
-                    <div className="text-sm font-bold">Jordan Smith</div>
+                    <div className="text-xs sm:text-sm font-bold truncate">Jordan Smith</div>
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-3 hidden sm:block">
                     <span className="px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-[0.6rem] font-black uppercase tracking-tighter shadow-sm">
                       Senior Dev
                     </span>
                   </div>
-                  <div className="col-span-2 text-right text-sm font-mono font-bold text-secondary">
+                  <div className="col-span-5 sm:col-span-2 text-right text-xs sm:text-sm font-mono font-bold text-secondary">
                     24,450
                   </div>
                 </div>
 
                 {/* Hover Mockup Row */}
                 <div className="relative group">
-                  <div className="grid grid-cols-12 gap-4 items-center bg-white/5 p-4 rounded-2xl border border-primary/40 shadow-[0_0_15px_rgba(173,198,255,0.2)] animate-fade-in translate-x-2 ring-1 ring-primary/20">
-                    <div className="col-span-1 text-primary font-bold">2</div>
-                    <div className="col-span-6 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-linear-to-br from-primary/40 to-primary/10 flex items-center justify-center text-primary font-bold text-xs shadow-inner ring-1 ring-primary/30">
+                  <div className="grid grid-cols-12 gap-2 sm:gap-4 items-center bg-white/5 p-2.5 sm:p-3 md:p-4 rounded-xl sm:rounded-2xl border border-primary/40 shadow-[0_0_15px_rgba(173,198,255,0.2)] animate-fade-in sm:translate-x-2 ring-1 ring-primary/20">
+                    <div className="col-span-1 text-primary font-bold text-xs sm:text-sm">2</div>
+                    <div className="col-span-6 flex items-center gap-2 sm:gap-3">
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-linear-to-br from-primary/40 to-primary/10 flex items-center justify-center text-primary font-bold text-[0.6rem] sm:text-xs shadow-inner ring-1 ring-primary/30">
                         AL
                       </div>
-                      <div className="text-sm font-bold text-primary">
+                      <div className="text-xs sm:text-sm font-bold text-primary truncate">
                         Alex Lee (You)
                       </div>
                     </div>
-                    <div className="col-span-3">
+                    <div className="col-span-3 hidden sm:block">
                       <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[0.6rem] font-black uppercase tracking-tighter shadow-sm">
                         Master
                       </span>
                     </div>
-                    <div className="col-span-2 text-right text-sm font-mono font-bold">
+                    <div className="col-span-5 sm:col-span-2 text-right text-xs sm:text-sm font-mono font-bold">
                       18,200
                     </div>
                   </div>
 
                   {/* Hover Tooltip Mockup */}
-                  <div className="absolute -top-16 left-1/4 bg-surface-bright/95 backdrop-blur-xl p-4 rounded-2xl border border-outline-variant shadow-2xl z-20 flex items-center gap-4 animate-bounce-subtle pointer-events-none">
+                  <div className="absolute -top-16 left-1/4 bg-surface-bright/95 backdrop-blur-xl p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-outline-variant shadow-2xl z-20 hidden sm:flex items-center gap-3 sm:gap-4 animate-bounce-subtle pointer-events-none">
                     <div className="flex -space-x-3">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <div
@@ -934,42 +934,42 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-12 gap-4 items-center bg-white/5/30 p-4 rounded-2xl border border-white/5 opacity-60">
-                  <div className="col-span-1 text-on-surface-variant font-bold">
+                <div className="grid grid-cols-12 gap-2 sm:gap-4 items-center bg-white/5/30 p-2.5 sm:p-3 md:p-4 rounded-xl sm:rounded-2xl border border-white/5 opacity-60">
+                  <div className="col-span-1 text-on-surface-variant font-bold text-xs sm:text-sm">
                     3
                   </div>
-                  <div className="col-span-6 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant font-bold text-xs">
+                  <div className="col-span-6 flex items-center gap-2 sm:gap-3">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant font-bold text-[0.6rem] sm:text-xs">
                       MK
                     </div>
-                    <div className="text-sm font-bold">Maya K.</div>
+                    <div className="text-xs sm:text-sm font-bold truncate">Maya K.</div>
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-3 hidden sm:block">
                     <span className="px-2 py-0.5 rounded-full bg-white/5 text-on-surface-variant/60 text-[0.6rem] font-black uppercase tracking-tighter">
                       Contributor
                     </span>
                   </div>
-                  <div className="col-span-2 text-right text-sm font-mono font-bold">
+                  <div className="col-span-5 sm:col-span-2 text-right text-xs sm:text-sm font-mono font-bold">
                     9,840
                   </div>
                 </div>
 
-                <div className="grid grid-cols-12 gap-4 items-center bg-white/5/30 p-4 rounded-2xl border border-white/5 opacity-40">
-                  <div className="col-span-1 text-on-surface-variant font-bold">
+                <div className="grid grid-cols-12 gap-2 sm:gap-4 items-center bg-white/5/30 p-2.5 sm:p-3 md:p-4 rounded-xl sm:rounded-2xl border border-white/5 opacity-40">
+                  <div className="col-span-1 text-on-surface-variant font-bold text-xs sm:text-sm">
                     4
                   </div>
-                  <div className="col-span-6 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant font-bold text-xs">
+                  <div className="col-span-6 flex items-center gap-2 sm:gap-3">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant font-bold text-[0.6rem] sm:text-xs">
                       CW
                     </div>
-                    <div className="text-sm font-bold">Chris Wang</div>
+                    <div className="text-xs sm:text-sm font-bold truncate">Chris Wang</div>
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-3 hidden sm:block">
                     <span className="px-2 py-0.5 rounded-full bg-white/5 text-on-surface-variant/60 text-[0.6rem] font-black uppercase tracking-tighter">
                       Pro
                     </span>
                   </div>
-                  <div className="col-span-2 text-right text-sm font-mono font-bold">
+                  <div className="col-span-5 sm:col-span-2 text-right text-xs sm:text-sm font-mono font-bold">
                     7,200
                   </div>
                 </div>
@@ -985,15 +985,15 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="pt-24 pb-12 px-8 md:px-16 bg-surface-container-lowest border-t border-outline-variant/20">
+      <footer className="pt-12 sm:pt-16 md:pt-24 pb-8 sm:pb-12 px-4 sm:px-8 md:px-16 bg-surface-container-lowest border-t border-outline-variant/20">
         <div className="max-w-[1680px] mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
-            <div className="col-span-1 md:col-span-1">
-              <div className="flex items-center gap-3 font-display font-bold text-xl text-on-surface mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 md:gap-12 mb-12 sm:mb-16 md:mb-20">
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-3 font-display font-bold text-lg sm:text-xl text-on-surface mb-5 sm:mb-8">
                 <TerminalIcon size={24} className="text-primary" />
                 <span>Git Mastery</span>
               </div>
-              <p className="text-on-surface-variant text-sm leading-relaxed mb-8 max-w-xs">
+              <p className="text-on-surface-variant text-sm leading-relaxed mb-5 sm:mb-8 max-w-xs">
                 Mastering the art of version control, one commit at a time. The
                 ultimate platform for developer excellence.
               </p>
@@ -1026,7 +1026,7 @@ export default function LandingPage() {
             </div>
 
             <div>
-              <h5 className="font-bold uppercase tracking-widest text-[0.7rem] text-primary mb-8">
+              <h5 className="font-bold uppercase tracking-widest text-[0.7rem] text-primary mb-4 sm:mb-8">
                 Product
               </h5>
               <ul className="space-y-4 text-sm text-on-surface-variant">
@@ -1064,7 +1064,7 @@ export default function LandingPage() {
             </div>
 
             <div>
-              <h5 className="font-bold uppercase tracking-widest text-[0.7rem] text-primary mb-8">
+              <h5 className="font-bold uppercase tracking-widest text-[0.7rem] text-primary mb-4 sm:mb-8">
                 Resources
               </h5>
               <ul className="space-y-4 text-sm text-on-surface-variant">
@@ -1092,7 +1092,7 @@ export default function LandingPage() {
             </div>
 
             <div>
-              <h5 className="font-bold uppercase tracking-widest text-[0.7rem] text-primary mb-8">
+              <h5 className="font-bold uppercase tracking-widest text-[0.7rem] text-primary mb-4 sm:mb-8">
                 Company
               </h5>
               <ul className="space-y-4 text-sm text-on-surface-variant">
@@ -1120,7 +1120,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="pt-12 border-t border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="pt-8 sm:pt-12 border-t border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
             <p className="text-xs text-on-surface-variant/60">
               © 2024 Git Mastery. The Terminal Learning Company.
             </p>

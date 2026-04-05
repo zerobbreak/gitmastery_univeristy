@@ -3,12 +3,16 @@
 import { useEffect, useState } from "react";
 import { RedirectToSignIn, useAuth } from "@clerk/nextjs";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   CheckCircle2,
   ChevronRight,
-  Compass,
+  Circle,
+  Flame,
   Play,
-  Sparkles,
+  Star,
+  TrendingUp,
+  Zap,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -19,8 +23,24 @@ import { AppHeader } from "@/components/AppHeader";
 import { fetchWithAuth } from "@/lib/api";
 import type { DashboardPayload } from "@/lib/dashboard-types";
 
+function DifficultyBadge({ level }: { level: string }) {
+  const normalized = level.toLowerCase();
+  const cls =
+    normalized === "easy" || normalized === "beginner"
+      ? "text-easy bg-easy/10"
+      : normalized === "medium" || normalized === "intermediate"
+        ? "text-medium bg-medium/10"
+        : normalized === "hard" || normalized === "pro"
+          ? "text-hard bg-hard/10"
+          : "text-muted-foreground bg-muted/50";
+  return (
+    <span className={`lc-badge ${cls}`}>{level}</span>
+  );
+}
+
 export default function Dashboard() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
+  const pathname = usePathname();
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -46,231 +66,163 @@ export default function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, [isSignedIn, getToken]);
+  }, [isSignedIn, getToken, pathname]);
 
   if (!isLoaded) return null;
   if (!isSignedIn) return <RedirectToSignIn />;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-foreground selection:bg-primary/30 selection:text-primary">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(120,119,198,0.1),rgba(255,255,255,0))]" />
-      <div className="pointer-events-none fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-soft-light" />
-
+    <div className="min-h-screen bg-background text-foreground">
       <AppHeader />
 
-      <main className="mx-auto w-full px-8 py-12">
-        {loadError ? (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+      <main className="mx-auto w-full max-w-[1400px] px-6 py-8">
+        {loadError && (
+          <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             {loadError}
           </div>
-        ) : null}
+        )}
 
         {!data ? (
-          <div className="flex flex-col gap-12">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-12 border-b border-white/3">
-              <div className="space-y-3 max-w-xl">
-                <Skeleton className="h-4 w-40" />
-                <Skeleton className="h-10 w-96 max-w-full" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="flex gap-12">
-                <Skeleton className="h-16 w-24" />
-                <Skeleton className="h-16 w-24" />
-                <Skeleton className="h-16 w-28" />
-              </div>
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <Skeleton className="h-24 rounded-lg" />
+              <Skeleton className="h-24 rounded-lg" />
+              <Skeleton className="h-24 rounded-lg" />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-              <div className="lg:col-span-8 space-y-12">
-                <Skeleton className="h-64 w-full rounded-2xl" />
-                <Skeleton className="h-40 w-full" />
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <div className="lg:col-span-2 space-y-6">
+                <Skeleton className="h-48 rounded-lg" />
+                <Skeleton className="h-64 rounded-lg" />
               </div>
-              <div className="lg:col-span-4 space-y-8">
-                <Skeleton className="h-48 w-full" />
-                <Skeleton className="h-32 w-full" />
+              <div className="space-y-6">
+                <Skeleton className="h-48 rounded-lg" />
+                <Skeleton className="h-32 rounded-lg" />
               </div>
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-12">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-12 border-b border-white/3">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
-                  <Sparkles size={12} />
-                  Mastery Level {data.user.masteryLevel}
+          <div className="space-y-8">
+            {/* Stat cards row */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="stat-card flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/10">
+                  <Flame size={20} className="text-orange-400" />
                 </div>
-                <h1 className="text-4xl font-bold tracking-tight">
-                  Welcome back,{" "}
-                  <span className="text-muted-foreground">{data.headline.welcomeName}</span>
-                </h1>
-                <p className="text-sm text-muted-foreground max-w-md">{data.headline.subtitle}</p>
+                <div>
+                  <p className="text-xs text-muted-foreground">Current Streak</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums">{data.user.streakDays}<span className="text-sm font-normal text-muted-foreground ml-1">days</span></p>
+                </div>
               </div>
 
-              <div className="flex items-center gap-12">
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Current Streak
-                  </span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold tabular-nums">{data.user.streakDays}</span>
-                    <span className="text-xs font-medium text-muted-foreground uppercase">Days</span>
-                  </div>
+              <div className="stat-card flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <Zap size={20} className="text-primary" />
                 </div>
-                <div className="h-10 w-px bg-white/5" />
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Total XP
-                  </span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold tabular-nums">{data.user.totalXpLabel}</span>
-                    <span className="text-xs font-medium text-muted-foreground uppercase">Points</span>
-                  </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total XP</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums">{data.user.totalXpLabel}<span className="text-sm font-normal text-muted-foreground ml-1">pts</span></p>
                 </div>
-                <div className="h-10 w-px bg-white/5" />
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Global Rank
-                  </span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold tabular-nums">#{data.user.globalRank}</span>
-                    <span className="text-xs font-medium text-muted-foreground uppercase">
-                      {data.user.topPercentLabel}
-                    </span>
-                  </div>
+              </div>
+
+              <div className="stat-card flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
+                  <TrendingUp size={20} className="text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Global Rank</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums">#{data.user.globalRank}<span className="text-sm font-normal text-muted-foreground ml-1">{data.user.topPercentLabel}</span></p>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-              <div className="lg:col-span-8 space-y-12">
-                <div className="space-y-6">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Active Module
-                  </h3>
-                  {data.activeModule ? (
-                    <div className="relative group">
-                      <div className="grid grid-cols-1 md:grid-cols-12 border border-white/5 bg-white/1 rounded-2xl overflow-hidden">
-                        <div className="md:col-span-7 p-10 space-y-10">
-                          <div className="space-y-4">
-                            <h2 className="text-4xl font-bold tracking-tight">{data.activeModule.title}</h2>
-                            <p className="text-base text-muted-foreground leading-relaxed max-w-sm">
-                              {data.activeModule.description}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-6">
-                            <Button
-                              asChild
-                              className="rounded-none px-10 font-bold h-12 bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
-                            >
-                              <Link href="/modules">Continue</Link>
-                            </Button>
-                            {data.activeModule.videoBriefAvailable ? (
-                              <div className="flex items-center gap-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                                <Play size={16} className="text-muted-foreground/60" />
-                                <span>Video brief</span>
-                              </div>
-                            ) : null}
-                          </div>
-                        </div>
-
-                        <div className="md:col-span-5 bg-white/2 border-l border-white/5 p-10 flex flex-col justify-center">
-                          <div className="space-y-10">
-                            <div className="space-y-4">
-                              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                                <span>Module Progress</span>
-                                <span className="text-foreground tabular-nums">
-                                  {data.activeModule.progressPercent}%
-                                </span>
-                              </div>
-                              <Progress
-                                value={data.activeModule.progressPercent}
-                                className="h-1 bg-white/5 rounded-none"
-                              />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-12">
-                              <div className="space-y-2">
-                                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">
-                                  Difficulty
-                                </span>
-                                <div className="text-sm font-bold">{data.activeModule.difficulty}</div>
-                              </div>
-                              <div className="space-y-2">
-                                <span className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">
-                                  XP Value
-                                </span>
-                                <div className="text-sm font-bold text-primary">
-                                  +{data.activeModule.xpReward} XP
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              {/* Left column */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Active module card */}
+                {data.activeModule ? (
+                  <div className="lc-panel">
+                    <div className="flex items-center gap-2 border-b border-border/30 px-5 py-3">
+                      <Play size={14} className="text-primary" />
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Continue Learning</span>
                     </div>
-                  ) : (
-                    <div className="border border-white/5 bg-white/2 rounded-2xl p-10 space-y-4">
-                      <p className="text-muted-foreground text-sm max-w-md">
-                        No active module yet. Open the curriculum to start your first module.
-                      </p>
-                      <Button asChild className="rounded-none font-bold uppercase tracking-widest text-[10px] h-11">
-                        <Link href="/modules">Go to curriculum</Link>
+                    <div className="p-5 space-y-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1.5">
+                          <h2 className="text-xl font-semibold tracking-tight">{data.activeModule.title}</h2>
+                          <p className="text-sm text-muted-foreground leading-relaxed max-w-lg">{data.activeModule.description}</p>
+                        </div>
+                        <DifficultyBadge level={data.activeModule.difficulty} />
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+                            <span>Progress</span>
+                            <span className="font-mono tabular-nums">{data.activeModule.progressPercent}%</span>
+                          </div>
+                          <Progress value={data.activeModule.progressPercent} className="h-1.5 bg-secondary" />
+                        </div>
+                        <span className="text-xs font-semibold text-primary">+{data.activeModule.xpReward} XP</span>
+                      </div>
+
+                      <Button asChild size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium">
+                        <Link href={data.activeModule.resumeHref}>Resume Module</Link>
                       </Button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="lc-panel p-5 space-y-3">
+                    <p className="text-sm text-muted-foreground">No active module. Start your first module from the curriculum.</p>
+                    <Button asChild size="sm">
+                      <Link href="/modules">Browse Problems</Link>
+                    </Button>
+                  </div>
+                )}
 
-                <div className="space-y-6">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Learning Path
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                {/* Learning path table */}
+                <div className="lc-panel">
+                  <div className="flex items-center justify-between border-b border-border/30 px-5 py-3">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Learning Path</span>
+                    <Link href="/modules" className="text-xs text-primary hover:underline font-medium">View All</Link>
+                  </div>
+                  <div className="divide-y divide-border/20">
                     {data.learningPath.map((item) => (
                       <Link
                         key={item.moduleId}
-                        href="/modules"
-                        className="group flex items-center justify-between py-4 border-b border-white/3 hover:border-primary/30 transition-colors"
+                        href={item.resumeHref}
+                        className="lc-row group"
                       >
-                        <div className="flex items-center gap-4">
-                          <div
-                            className={`h-8 w-8 flex items-center justify-center ${
-                              item.done ? "text-emerald-500" : "text-muted-foreground/40"
-                            }`}
-                          >
-                            {item.done ? <CheckCircle2 size={18} /> : <Compass size={18} />}
-                          </div>
-                          <div>
-                            <div className="text-sm font-bold group-hover:text-primary transition-colors">
-                              {item.title}
-                            </div>
-                            <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                              {item.level} • {item.xp} XP
-                            </div>
-                          </div>
+                        <div className="w-5 shrink-0">
+                          {item.done ? (
+                            <CheckCircle2 size={16} className="text-easy" />
+                          ) : (
+                            <Circle size={16} className="text-muted-foreground/30" />
+                          )}
                         </div>
-                        <ChevronRight
-                          size={14}
-                          className="text-muted-foreground/20 group-hover:text-primary transition-colors"
-                        />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium group-hover:text-primary transition-colors truncate block">
+                            {item.title}
+                          </span>
+                        </div>
+                        <DifficultyBadge level={item.level} />
+                        <span className="text-xs font-mono tabular-nums text-muted-foreground w-16 text-right">{item.xp} XP</span>
+                        <ChevronRight size={14} className="text-muted-foreground/30 group-hover:text-primary transition-colors shrink-0" />
                       </Link>
                     ))}
                   </div>
                 </div>
 
-                <div className="space-y-6">
+                {/* Heatmap */}
+                <div className="lc-panel p-5 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                      Activity Momentum
-                    </h3>
-                    <span className="text-[10px] font-bold text-muted-foreground">
-                      {data.activityYearLabel}
-                    </span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Activity</span>
+                    <span className="text-xs text-muted-foreground font-mono">{data.activityYearLabel}</span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-[3px]">
                     {data.heatmap.map((level, idx) => (
                       <div
                         key={idx}
-                        className={`h-3 w-3 rounded-sm border border-white/2 ${
+                        className={`h-[11px] w-[11px] rounded-[2px] ${
                           level === 4
                             ? "bg-primary"
                             : level === 3
@@ -278,78 +230,85 @@ export default function Dashboard() {
                               : level === 2
                                 ? "bg-primary/30"
                                 : level === 1
-                                  ? "bg-primary/10"
-                                  : "bg-white/3"
+                                  ? "bg-primary/12"
+                                  : "bg-secondary/60"
                         }`}
                       />
                     ))}
                   </div>
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                    <span>Less</span>
+                    <div className="flex gap-[3px]">
+                      <div className="h-[11px] w-[11px] rounded-[2px] bg-secondary/60" />
+                      <div className="h-[11px] w-[11px] rounded-[2px] bg-primary/12" />
+                      <div className="h-[11px] w-[11px] rounded-[2px] bg-primary/30" />
+                      <div className="h-[11px] w-[11px] rounded-[2px] bg-primary/60" />
+                      <div className="h-[11px] w-[11px] rounded-[2px] bg-primary" />
+                    </div>
+                    <span>More</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="lg:col-span-4 space-y-12">
-                <div className="space-y-6">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Classroom Elite
-                  </h3>
-                  <div className="divide-y divide-white/3">
+              {/* Right column */}
+              <div className="space-y-6">
+                {/* Mastery level */}
+                <div className="stat-card space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Star size={16} className="text-medium" />
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Mastery Level</span>
+                  </div>
+                  <p className="text-4xl font-bold font-mono tabular-nums">{data.user.masteryLevel}</p>
+                  <p className="text-xs text-muted-foreground">Level {data.user.masteryLevel} Git Practitioner</p>
+                </div>
+
+                {/* Leaderboard */}
+                <div className="lc-panel">
+                  <div className="px-5 py-3 border-b border-border/30">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Leaderboard</span>
+                  </div>
+                  <div className="divide-y divide-border/20">
                     {data.leaderboardPreview.map((user) => (
                       <div
                         key={`${user.rank}-${user.displayName}`}
-                        className={`py-4 flex items-center justify-between ${user.isYou ? "bg-primary/2" : ""}`}
+                        className={`flex items-center gap-3 px-5 py-2.5 ${user.isYou ? "bg-primary/5" : ""}`}
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="text-[10px] font-bold text-muted-foreground w-4 tabular-nums">
-                            {user.rank}
-                          </span>
-                          <Avatar className="h-6 w-6 border border-white/10 rounded-sm">
-                            <AvatarFallback className="text-[8px] font-bold bg-white/5">
-                              {user.displayName[0]?.toUpperCase() ?? "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span
-                            className={`text-xs font-bold ${user.isYou ? "text-primary" : "text-muted-foreground"}`}
-                          >
-                            {user.displayName}
-                          </span>
-                        </div>
-                        <span className="text-[10px] font-bold font-mono tabular-nums">{user.xpLabel}</span>
+                        <span className="text-xs font-mono font-bold tabular-nums w-5 text-muted-foreground">{user.rank}</span>
+                        <Avatar className="h-6 w-6 rounded-full">
+                          <AvatarFallback className="text-[9px] font-bold bg-secondary text-foreground">
+                            {user.displayName[0]?.toUpperCase() ?? "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className={`text-xs font-medium flex-1 truncate ${user.isYou ? "text-primary" : ""}`}>
+                          {user.displayName}
+                        </span>
+                        <span className="text-[11px] font-mono tabular-nums text-muted-foreground">{user.xpLabel}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="space-y-4 pt-6 border-t border-white/3">
-                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-primary">
-                    <Sparkles size={12} />
-                    Coach Hint
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed italic border-l-2 border-primary/20 pl-4">
-                    <span className="text-foreground font-medium not-italic">{data.coachHint}</span>
-                  </p>
+                {/* Coach hint */}
+                <div className="lc-panel p-5 space-y-2">
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">Coach Tip</span>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{data.coachHint}</p>
                 </div>
 
-                <div className="space-y-6">
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Recent Activity
-                  </h3>
+                {/* Recent activity */}
+                <div className="lc-panel">
+                  <div className="px-5 py-3 border-b border-border/30">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent Activity</span>
+                  </div>
                   {data.recentActivity.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                      No activity yet. Complete lessons and labs to see your progress here.
+                    <p className="px-5 py-4 text-xs text-muted-foreground">
+                      No activity yet. Complete challenges to see your progress.
                     </p>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="divide-y divide-border/20">
                       {data.recentActivity.map((activity) => (
-                        <div key={activity.id} className="flex items-start gap-4 group">
-                          <div className="mt-1.5 h-1 w-1 bg-white/20 group-hover:bg-primary transition-colors" />
-                          <div className="space-y-0.5">
-                            <div className="text-xs font-bold group-hover:text-primary transition-colors">
-                              {activity.title}
-                            </div>
-                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider tabular-nums">
-                              {activity.timeLabel}
-                            </div>
-                          </div>
+                        <div key={activity.id} className="px-5 py-3 space-y-0.5">
+                          <p className="text-xs font-medium">{activity.title}</p>
+                          <p className="text-[11px] text-muted-foreground font-mono tabular-nums">{activity.timeLabel}</p>
                         </div>
                       ))}
                     </div>

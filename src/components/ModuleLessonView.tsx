@@ -1,150 +1,254 @@
 "use client";
 
-import { ChevronRight, CheckCircle2 } from "lucide-react";
+import { BookOpen, CheckCircle2, ChevronDown, ChevronRight, Circle, Lock } from "lucide-react";
 import Link from "next/link";
 
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { lessonInlineMarkdownToHtml } from "@/lib/lesson-markdown";
+import { getChallengeListHint } from "@/lib/challenge-list-hints";
 import { getLessonContent } from "@/lib/module-lesson-content";
 import {
+  TRACKS,
   challengePath,
-  lessonPath,
+  stepPath,
   trackPath,
+  type ChallengeDef,
   type TrackId,
   type TrackModuleDef,
 } from "@/lib/module-routes";
+import { getStepsForModule, hasSteps } from "@/lib/module-steps";
+
+function DifficultyBadge({ level }: { level: string }) {
+  const n = level.toLowerCase();
+  const cls =
+    n === "easy" ? "text-easy bg-easy/10"
+    : n === "medium" ? "text-medium bg-medium/10"
+    : n === "hard" ? "text-hard bg-hard/10"
+    : "text-muted-foreground bg-muted/50";
+  return <span className={`lc-badge ${cls}`}>{level}</span>;
+}
 
 export function ModuleLessonView({
   trackId,
   moduleDef,
+  challenges,
+  completedChallengeIds,
 }: {
   trackId: TrackId;
   moduleDef: TrackModuleDef;
+  challenges: ChallengeDef[];
+  completedChallengeIds: string[];
 }) {
   const content = getLessonContent(trackId, moduleDef.lessonSlug);
+  const steps = getStepsForModule(moduleDef.id);
+  const moduleHasSteps = hasSteps(moduleDef.id);
   const trackHref = trackPath(trackId);
+  const doneSet = new Set(completedChallengeIds);
 
-  if (!content) {
+  if (!content && !moduleHasSteps) {
     return (
-      <div className="mx-auto max-w-3xl space-y-6">
+      <div className="mx-auto max-w-3xl space-y-4 p-6">
         <Link
           href={trackHref}
-          className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
+          className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
-          ← {moduleDef.title}
+          &larr; Back to {TRACKS[trackId].title}
         </Link>
-        <p className="text-muted-foreground">Lesson content is not available for this module yet.</p>
+        <p className="text-sm text-muted-foreground">Lesson content is not available for this module yet.</p>
       </div>
     );
   }
 
   return (
-    <article className="mx-auto max-w-3xl space-y-12">
-      <div className="space-y-4">
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/modules"
-            className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
-          >
-            ← Curriculum
+    <article className="flex h-full flex-col">
+      {/* Fixed Header: Breadcrumbs + Title */}
+      <div className="shrink-0 mx-auto w-full max-w-3xl space-y-6 pt-6 pb-6">
+        {/* Breadcrumbs */}
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <Link href="/modules" className="hover:text-foreground transition-colors font-medium">Problems</Link>
+          <ChevronRight size={12} className="opacity-40" />
+          <Link href={trackHref} className="hover:text-foreground transition-colors font-medium">
+            {TRACKS[trackId].title}
           </Link>
-          <span className="text-[10px] text-muted-foreground/40">/</span>
-          <Link
-            href={trackHref}
-            className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {trackId}
-          </Link>
+          <ChevronRight size={12} className="opacity-40" />
+          <span className="text-foreground font-medium">{moduleDef.title}</span>
         </div>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-primary">{content.eyebrow}</p>
-        <h1 className="text-4xl font-bold tracking-tight md:text-5xl">{content.title}</h1>
-        <p className="text-base leading-relaxed text-muted-foreground">{content.intro}</p>
-        <Badge
-          variant="outline"
-          className={`rounded-none border-white/10 text-[9px] font-bold uppercase tracking-widest ${
-            moduleDef.status === "completed"
-              ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-500"
-              : moduleDef.status === "active"
-                ? "border-primary/20 bg-primary/5 text-primary"
-                : "text-muted-foreground"
-          }`}
-        >
-          {moduleDef.status}
-        </Badge>
+
+        {/* Title section */}
+        <div className="space-y-3">
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {content?.title ?? moduleDef.title}
+            </h1>
+            <div className={`lc-badge shrink-0 ${
+              moduleDef.status === "completed" ? "text-easy bg-easy/10"
+              : moduleDef.status === "active" ? "text-primary bg-primary/10"
+              : "text-muted-foreground bg-secondary"
+            }`}>
+              {moduleDef.status}
+            </div>
+          </div>
+          {content?.eyebrow && (
+            <p className="text-xs font-semibold text-primary uppercase tracking-wider">{content.eyebrow}</p>
+          )}
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            {content?.intro ?? moduleDef.summary}
+          </p>
+        </div>
       </div>
 
-      {moduleDef.challenges && moduleDef.challenges.length > 0 && (
-        <div className="space-y-6">
-          <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-            Challenges
-          </h2>
-          <div className="grid gap-4">
-            {moduleDef.challenges.map((challenge) => (
-              <Link
-                key={challenge.id}
-                href={challengePath(trackId, moduleDef.lessonSlug, challenge.slug)}
-                className="group flex items-center justify-between border border-white/5 bg-white/1 p-6 transition-all hover:bg-white/3"
-              >
-                <div className="space-y-1">
-                  <h3 className="text-lg font-bold tracking-tight group-hover:text-primary transition-colors">
-                    {challenge.title}
-                  </h3>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-500">
-                      {challenge.difficulty}
-                    </span>
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-                      {challenge.xp} XP
-                    </span>
-                  </div>
-                </div>
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-all">
-                  <ChevronRight size={16} />
-                </div>
+      {/* Scrollable Content */}
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="mx-auto w-full max-w-3xl space-y-8 pb-8">
+          {/* Steps */}
+          {moduleHasSteps && steps && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Learning Path</h2>
+                <span className="text-[11px] font-mono tabular-nums text-muted-foreground">{steps.length} steps</span>
+              </div>
+              <div className="lc-panel divide-y divide-border/20">
+                {steps.map((step) => (
+                  <Link
+                    key={step.stepNumber}
+                    href={stepPath(trackId, moduleDef.lessonSlug, step.stepNumber)}
+                    className="lc-row group"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-secondary text-xs font-semibold text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                      {step.stepNumber}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm font-medium group-hover:text-primary transition-colors">{step.title}</h3>
+                      <p
+                        className="text-[11px] text-muted-foreground truncate"
+                        dangerouslySetInnerHTML={{
+                          __html: lessonInlineMarkdownToHtml(step.body.split("\n")[0] ?? ""),
+                        }}
+                      />
+                    </div>
+                    <ChevronRight size={14} className="shrink-0 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                  </Link>
+                ))}
+              </div>
+              <Link href={stepPath(trackId, moduleDef.lessonSlug, 1)}>
+                <Button className="w-full gap-2 font-medium text-[13px]">
+                  <BookOpen size={14} />
+                  Start Learning
+                </Button>
               </Link>
-            ))}
+            </div>
+          )}
+
+          {/* Challenges list */}
+          {challenges.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Challenges</h2>
+              <div className="lc-panel divide-y divide-border/20">
+                {challenges.map((challenge, index) => {
+                  const prevDone =
+                    index === 0 || Boolean(doneSet.has(challenges[index - 1]!.id));
+                  const thisDone = doneSet.has(challenge.id);
+                  const unlocked = prevDone || thisDone;
+                  const locked = !unlocked;
+
+                  /** Teach steps first when the module has a learning path; otherwise open the challenge. */
+                  const challengeHref = moduleHasSteps
+                    ? stepPath(trackId, moduleDef.lessonSlug, 1)
+                    : challengePath(trackId, moduleDef.lessonSlug, challenge.slug);
+
+                  const listHint = getChallengeListHint(challenge);
+                  const row = (
+                    <div className={`flex items-start gap-4 px-5 py-4 transition-colors ${locked ? "opacity-50" : "hover:bg-white/2"}`}>
+                      <div className="shrink-0 pt-0.5">
+                        {thisDone ? (
+                          <CheckCircle2 size={18} className="text-easy" />
+                        ) : locked ? (
+                          <Lock size={16} className="text-muted-foreground/40" />
+                        ) : (
+                          <Circle size={18} className="text-muted-foreground/30" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-medium">{challenge.title}</h3>
+                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+                          {listHint}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-3 mt-2">
+                          <DifficultyBadge level={challenge.difficulty} />
+                          <span className="text-[11px] font-mono tabular-nums text-muted-foreground">{challenge.xp} XP</span>
+                          {thisDone && <span className="text-[10px] font-semibold text-easy uppercase tracking-wider">Solved</span>}
+                        </div>
+                      </div>
+                      {!locked && <ChevronRight size={14} className="shrink-0 text-muted-foreground/30 mt-1" />}
+                    </div>
+                  );
+
+                  if (locked) {
+                    return <div key={challenge.id}>{row}</div>;
+                  }
+
+                  return (
+                    <Link
+                      key={challenge.id}
+                      href={challengeHref}
+                      className="block group"
+                    >
+                      {row}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Lesson content sections */}
+          {content && !moduleHasSteps && (
+            <>
+              <div className="space-y-6">
+                {content.sections.map((section) => (
+                  <section key={section.heading} className="space-y-2">
+                    <h2 className="text-base font-semibold tracking-tight">{section.heading}</h2>
+                    <p className="text-sm leading-relaxed text-muted-foreground">{section.body}</p>
+                  </section>
+                ))}
+              </div>
+
+              <div className="lc-panel overflow-hidden">
+                <div className="px-4 py-2.5 border-b border-border/30 bg-card">
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Terminal</span>
+                </div>
+                <div className="p-4 terminal-bg">
+                  <ul className="space-y-1.5 font-mono text-[12px] text-muted-foreground">
+                    {content.terminal.map((line, i) => (
+                      <li key={`terminal-${i}`} className="flex gap-2">
+                        <span className="text-primary">$</span>
+                        <span>{line}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Footer nav */}
+          <div className="flex flex-wrap items-center gap-4 border-t border-border/30 pt-6">
+            <Link
+              href={trackHref}
+              className="flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              &larr; Back to track
+            </Link>
           </div>
         </div>
-      )}
+      </ScrollArea>
 
-      <div className="space-y-10">
-        {content.sections.map((section) => (
-          <section key={section.heading} className="space-y-3">
-            <h2 className="text-lg font-bold tracking-tight">{section.heading}</h2>
-            <p className="text-sm leading-relaxed text-muted-foreground">{section.body}</p>
-          </section>
-        ))}
-      </div>
-
-      <div className="border border-white/5 bg-[#0a0a0a] p-6">
-        <h3 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-          Terminal
-        </h3>
-        <ul className="space-y-2 font-mono text-[11px] text-muted-foreground">
-          {content.terminal.map((line) => (
-            <li key={line} className="flex gap-2">
-              <span className="text-primary">$</span>
-              <span>{line}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="flex flex-wrap gap-4 border-t border-white/5 pt-8">
-        <Link
-          href={trackHref}
-          className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground"
-        >
-          <CheckCircle2 size={14} className="text-primary" />
-          Back to track
-        </Link>
-        {moduleDef.lessonSlug !== "git-basics" && trackId === "foundations" && (
-          <Link
-            href={lessonPath("foundations", "git-basics")}
-            className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary hover:underline"
-          >
-            Go to Git basics
-          </Link>
-        )}
+      {/* Scroll Indicator */}
+      <div className="shrink-0 flex items-center justify-center gap-2 py-4 text-[10px] font-medium uppercase tracking-widest text-muted-foreground/60 border-t border-white/5">
+        <ChevronDown size={14} className="animate-bounce" />
+        <span>Scroll to navigate</span>
+        <ChevronDown size={14} className="animate-bounce" />
       </div>
     </article>
   );

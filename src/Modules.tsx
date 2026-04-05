@@ -2,19 +2,22 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { RedirectToSignIn, useAuth } from "@clerk/nextjs";
+import { usePathname } from "next/navigation";
 import {
   CheckCircle2,
+  Circle,
   GitBranch,
   Lock,
   Code2,
   Cpu,
   Layers,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchWithAuth } from "@/lib/api";
 import type { DashboardPayload } from "@/lib/dashboard-types";
@@ -48,6 +51,32 @@ function ModuleIcon({ name, className }: { name: ModuleIconName; className?: str
   }
 }
 
+function DifficultyBadge({ level }: { level: string }) {
+  const n = level.toLowerCase();
+  const cls =
+    n === "easy" || n === "beginner"
+      ? "text-easy bg-easy/10"
+      : n === "medium" || n === "intermediate"
+        ? "text-medium bg-medium/10"
+        : n === "hard" || n === "pro"
+          ? "text-hard bg-hard/10"
+          : "text-muted-foreground bg-muted/50";
+  return <span className={`lc-badge ${cls}`}>{level}</span>;
+}
+
+function StatusIcon({ status }: { status: ModuleStatus }) {
+  switch (status) {
+    case "completed":
+      return <CheckCircle2 size={18} className="text-easy" />;
+    case "active":
+      return <div className="h-[18px] w-[18px] rounded-full border-2 border-primary flex items-center justify-center"><div className="h-2 w-2 rounded-full bg-primary" /></div>;
+    case "next":
+      return <Circle size={18} className="text-medium" />;
+    case "locked":
+      return <Lock size={16} className="text-muted-foreground/40" />;
+  }
+}
+
 function modulePrimaryHref(
   trackId: TrackId,
   mod: TrackModuleDef,
@@ -59,9 +88,9 @@ function modulePrimaryHref(
 }
 
 function moduleButtonLabel(status: ModuleStatus): string {
-  if (status === "completed") return "Review content";
-  if (status === "active") return "Continue module";
-  if (status === "next") return "Open module";
+  if (status === "completed") return "Review";
+  if (status === "active") return "Continue";
+  if (status === "next") return "Start";
   return "Locked";
 }
 
@@ -84,8 +113,10 @@ function resolveLiveStatus(
 
 export default function Modules() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
+  const pathname = usePathname();
   const [data, setData] = useState<DashboardPayload | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [activeTrackTab, setActiveTrackTab] = useState<TrackId>("foundations");
 
   useEffect(() => {
     if (!isSignedIn) return;
@@ -109,352 +140,229 @@ export default function Modules() {
     return () => {
       cancelled = true;
     };
-  }, [isSignedIn, getToken]);
+  }, [isSignedIn, getToken, pathname]);
 
   const progressMap = useMemo(() => {
     if (!data) return new Map<string, DashboardPayload["learningPath"][number]>();
     return new Map(data.learningPath.map((p) => [p.moduleId, p]));
   }, [data]);
 
-  const roadmap = useMemo(() => {
-    if (!data) {
-      return TRACK_IDS.map((id) => {
-        const t = TRACKS[id];
-        return {
-          id: t.id,
-          title: t.title,
-          sub: t.sub,
-          year: t.year,
-          active: false,
-          done: false,
-          locked: t.locked,
-          href: trackPath(id),
-        };
-      });
-    }
-
+  useEffect(() => {
+    if (!data) return;
     const activeFromProfile = data.activeModule?.id
       ? getModuleRouteById(data.activeModule.id)?.track
       : null;
+    if (activeFromProfile) setActiveTrackTab(activeFromProfile);
+  }, [data]);
 
-    const firstActiveOrNext = data.learningPath.find(
-      (p) => p.status === "active" || p.status === "next",
-    );
-    const activeFromPath = firstActiveOrNext
-      ? trackIdForYear(firstActiveOrNext.trackYear)
-      : null;
-
-    const activeTrack = activeFromProfile ?? activeFromPath ?? "foundations";
-
+  const trackStats = useMemo(() => {
     return TRACK_IDS.map((id) => {
       const t = TRACKS[id];
-      const modsInTrack = t.modules;
-      const done =
-        modsInTrack.length > 0 &&
-        modsInTrack.every((m) => progressMap.get(m.id)?.status === "completed");
-
-      return {
-        id: t.id,
-        title: t.title,
-        sub: t.sub,
-        year: t.year,
-        active: !t.locked && id === activeTrack,
-        done: !t.locked && done,
-        locked: t.locked,
-        href: trackPath(id),
-      };
+      const total = t.modules.length;
+      const completed = t.modules.filter(
+        (m) => progressMap.get(m.id)?.status === "completed",
+      ).length;
+      return { id, title: t.title, year: t.year, level: t.level, locked: t.locked, total, completed };
     });
-  }, [data, progressMap]);
+  }, [progressMap]);
 
-  const curriculum = useMemo(() => {
-    return TRACK_IDS.map((id) => {
-      const t = TRACKS[id];
-      return {
-        year: String(t.year).padStart(2, "0"),
-        label: t.yearLabel,
-        level: t.level,
-        trackId: id as TrackId,
-        modules: t.modules,
-      };
-    });
-  }, []);
+  const currentTrack = TRACKS[activeTrackTab];
 
   if (!isLoaded) return null;
   if (!isSignedIn) return <RedirectToSignIn />;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-foreground selection:bg-primary/30 selection:text-primary">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(120,119,198,0.1),rgba(255,255,255,0))]" />
-      <div className="pointer-events-none fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-soft-light" />
-
+    <div className="min-h-screen bg-background text-foreground">
       <AppHeader />
 
-      <main className="mx-auto w-full px-8 py-12">
-        {loadError ? (
-          <div className="mb-8 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+      <main className="mx-auto w-full max-w-[1400px] px-6 py-8">
+        {loadError && (
+          <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             {loadError}
           </div>
-        ) : null}
+        )}
 
         {!data ? (
-          <div className="flex flex-col gap-16">
-            <div className="space-y-6">
-              <Skeleton className="h-3 w-40" />
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <Skeleton className="h-40 w-full" />
-                <Skeleton className="h-40 w-full" />
-                <Skeleton className="h-40 w-full" />
-              </div>
-            </div>
-            <div className="space-y-4">
-              <Skeleton className="h-12 w-96 max-w-full" />
-              <Skeleton className="h-20 w-full max-w-2xl" />
-            </div>
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-              <Skeleton className="h-72 w-full" />
-              <Skeleton className="h-72 w-full" />
+          <div className="space-y-6">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-12 w-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-16">
-            <div className="space-y-6">
-              <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                Academic Roadmap
-              </h3>
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                {roadmap.map((item) => {
-                  const inner = (
-                    <>
-                      <div className="mb-4 flex items-center justify-between">
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-                          Year {item.year}
-                        </span>
-                        {item.done ? (
-                          <CheckCircle2 size={14} className="text-primary" />
-                        ) : item.locked ? (
-                          <Lock size={12} className="text-muted-foreground/40" />
-                        ) : null}
-                      </div>
-                      <div className="space-y-1">
-                        <h4 className="text-lg font-bold tracking-tight">{item.title}</h4>
-                        <p className="text-xs text-muted-foreground">{item.sub}</p>
-                      </div>
-                    </>
-                  );
-                  const className = `block p-6 border transition-all ${
-                    item.active
-                      ? "border-primary bg-white/5 shadow-[0_0_30px_rgba(173,198,255,0.05)]"
-                      : "border-white/5 bg-white/1 hover:border-white/10"
-                  } ${item.locked ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`;
+          <div className="space-y-8">
+            {/* Page header */}
+            <div className="space-y-1">
+              <h1 className="text-2xl font-semibold tracking-tight">Problems</h1>
+              <p className="text-sm text-muted-foreground">{data.headline.subtitle}</p>
+            </div>
 
-                  if (item.locked) {
-                    return (
-                      <div key={item.id} className={className}>
-                        {inner}
+            {/* Track tabs */}
+            <div className="flex items-center gap-1 border-b border-border/40">
+              {trackStats.map((ts) => (
+                <button
+                  key={ts.id}
+                  type="button"
+                  onClick={() => !ts.locked && setActiveTrackTab(ts.id)}
+                  disabled={ts.locked}
+                  className={`lc-tab relative pb-3 ${
+                    activeTrackTab === ts.id ? "lc-tab-active" : ""
+                  } ${ts.locked ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+                >
+                  <span className="flex items-center gap-2">
+                    {ts.locked && <Lock size={12} />}
+                    {ts.title}
+                    <span className="text-[10px] font-mono tabular-nums text-muted-foreground">
+                      {ts.completed}/{ts.total}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Track progress bar */}
+            {(() => {
+              const ts = trackStats.find((t) => t.id === activeTrackTab);
+              if (!ts || ts.total === 0) return null;
+              const pct = Math.round((ts.completed / ts.total) * 100);
+              return (
+                <div className="lc-panel p-4 flex items-center gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="text-muted-foreground">{currentTrack.yearLabel}</span>
+                      <span className="font-mono tabular-nums">{pct}% complete</span>
+                    </div>
+                    <Progress value={pct} className="h-1.5 bg-secondary" />
+                  </div>
+                  <DifficultyBadge level={ts.level} />
+                </div>
+              );
+            })()}
+
+            {/* Module list */}
+            <div className="lc-panel">
+              <div className="grid grid-cols-[40px_1fr_100px_80px_80px_32px] gap-2 items-center px-5 py-2.5 border-b border-border/30 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <span>Status</span>
+                <span>Module</span>
+                <span>Difficulty</span>
+                <span className="text-right">XP</span>
+                <span className="text-center">Action</span>
+                <span />
+              </div>
+
+              <div className="divide-y divide-border/20">
+                {currentTrack.modules.map((mod) => {
+                  const lp = progressMap.get(mod.id);
+                  const status = resolveLiveStatus(mod, lp);
+                  const title = lp?.title ?? mod.title;
+                  const levelLabel = lp?.level ?? currentTrack.level;
+                  const xpLabel = lp?.xp ?? 0;
+                  const href = modulePrimaryHref(activeTrackTab, mod, status);
+                  const isLocked = status === "locked";
+
+                  const row = (
+                    <div className={`grid grid-cols-[40px_1fr_100px_80px_80px_32px] gap-2 items-center px-5 py-4 transition-colors ${isLocked ? "opacity-50" : "hover:bg-white/2"}`}>
+                      <div className="flex justify-center">
+                        <StatusIcon status={status} />
                       </div>
-                    );
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-secondary text-muted-foreground">
+                            <ModuleIcon name={mod.iconName} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{title}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">{mod.id} &middot; {mod.summary.slice(0, 60)}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <DifficultyBadge level={levelLabel} />
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-mono tabular-nums">{xpLabel}</span>
+                      </div>
+                      <div className="text-center">
+                        {!isLocked && (
+                          <span className={`text-[11px] font-semibold ${
+                            status === "active" ? "text-primary" : status === "completed" ? "text-easy" : "text-medium"
+                          }`}>
+                            {moduleButtonLabel(status)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex justify-center">
+                        {!isLocked && <ChevronRight size={14} className="text-muted-foreground/40" />}
+                      </div>
+                    </div>
+                  );
+
+                  if (isLocked || !href) {
+                    return <div key={mod.id}>{row}</div>;
                   }
+
                   return (
-                    <Link key={item.id} href={item.href} className={className}>
-                      {inner}
+                    <Link key={mod.id} href={href} className="block group">
+                      {row}
                     </Link>
                   );
                 })}
               </div>
             </div>
 
-            <div className="max-w-2xl space-y-4">
-              <h1 className="text-5xl font-bold tracking-tight">
-                Curriculum <span className="text-muted-foreground">Explorer</span>
-              </h1>
-              <p className="text-base leading-relaxed text-muted-foreground">
-                {data.headline.subtitle}
-              </p>
-            </div>
-
-            {curriculum.map((section) => (
-              <div key={section.year} className="space-y-10">
-                <div className="flex items-center gap-4">
-                  <div className="h-px flex-1 bg-white/5" />
-                  <div className="flex items-center gap-3 rounded-sm border border-white/5 bg-white/2 px-4 py-1.5">
-                    <span className="text-[10px] font-bold tabular-nums text-muted-foreground">
-                      {section.year}
-                    </span>
-                    <span className="text-[11px] font-bold uppercase tracking-[0.2em]">
-                      {section.label}
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className="rounded-none border-white/10 px-2 text-[8px] font-bold uppercase tracking-widest text-muted-foreground/60"
-                    >
-                      {section.level}
-                    </Badge>
+            {/* Bottom section: activity + terminal preview */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <div className="lc-panel lg:col-span-1">
+                <div className="px-5 py-3 border-b border-border/30">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent Activity</span>
+                </div>
+                {data.recentActivity.length === 0 ? (
+                  <p className="px-5 py-4 text-xs text-muted-foreground">No recent activity yet.</p>
+                ) : (
+                  <div className="divide-y divide-border/20">
+                    {data.recentActivity.map((log) => (
+                      <div key={log.id} className="px-5 py-3 space-y-0.5">
+                        <p className="text-xs font-medium">{log.title}</p>
+                        <p className="text-[10px] font-mono tabular-nums text-muted-foreground">{log.timeLabel}</p>
+                      </div>
+                    ))}
                   </div>
-                  <div className="h-px flex-1 bg-white/5" />
-                </div>
-
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                  {section.modules.map((mod) => {
-                    const lp = progressMap.get(mod.id);
-                    const status = resolveLiveStatus(mod, lp);
-                    const title = lp?.title ?? mod.title;
-                    const levelLabel = lp?.level ?? section.level;
-                    const xpLabel = lp?.xp ?? 0;
-                    const href = modulePrimaryHref(section.trackId, mod, status);
-                    return (
-                      <div
-                        key={mod.id}
-                        className={`group relative space-y-8 border border-white/5 p-10 transition-all ${
-                          status === "locked"
-                            ? "bg-white/1 opacity-50"
-                            : "bg-white/1 hover:bg-white/2"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div
-                            className={`flex h-10 w-10 items-center justify-center border border-white/10 bg-white/5 ${
-                              status === "locked"
-                                ? "text-muted-foreground/20"
-                                : "text-muted-foreground group-hover:text-primary"
-                            } transition-colors`}
-                          >
-                            <ModuleIcon name={mod.iconName} />
-                          </div>
-                          <Badge
-                            variant="outline"
-                            className={`rounded-none border-white/10 px-3 text-[9px] font-bold uppercase tracking-widest ${
-                              status === "completed"
-                                ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-500"
-                                : status === "active"
-                                  ? "border-primary/20 bg-primary/5 text-primary"
-                                  : status === "next"
-                                    ? "border-amber-500/20 bg-amber-500/5 text-amber-500"
-                                    : "border-white/5 bg-white/5 text-muted-foreground/40"
-                            }`}
-                          >
-                            {status}
-                          </Badge>
-                        </div>
-
-                        <div className="space-y-2">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                            {mod.id}
-                          </span>
-                          <h3 className="text-xl font-bold tracking-tight">{title}</h3>
-                          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                            {levelLabel} · {xpLabel} XP
-                          </p>
-                        </div>
-
-                        <ul className="space-y-3">
-                          {mod.bullets.map((item) => (
-                            <li
-                              key={item}
-                              className="flex items-center gap-3 text-xs text-muted-foreground"
-                            >
-                              <CheckCircle2
-                                size={12}
-                                className={
-                                  status === "completed"
-                                    ? "text-emerald-500"
-                                    : "text-muted-foreground/40"
-                                }
-                              />
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-
-                        {href ? (
-                          <Button
-                            asChild
-                            className={`h-11 w-full rounded-none text-[10px] font-bold uppercase tracking-widest ${
-                              status === "completed"
-                                ? "bg-white/5 text-foreground hover:bg-white/10"
-                                : status === "active"
-                                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                  : status === "next"
-                                    ? "border border-amber-500/20 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20"
-                                    : "bg-white/5 text-muted-foreground/40"
-                            }`}
-                          >
-                            <Link href={href}>{moduleButtonLabel(status)}</Link>
-                          </Button>
-                        ) : (
-                          <Button
-                            disabled
-                            className="h-11 w-full rounded-none bg-white/5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40"
-                          >
-                            {moduleButtonLabel(status)}
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-
-            <div className="grid grid-cols-1 gap-8 border-t border-white/3 pt-12 lg:grid-cols-12">
-              <div className="space-y-6 lg:col-span-4">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Live Session Logs
-                </h3>
-                <div className="space-y-4 border-l border-white/5 pl-6">
-                  {data.recentActivity.length === 0 ? (
-                    <p className="text-[11px] text-muted-foreground">
-                      No recent activity yet. Complete a module to see updates here.
-                    </p>
-                  ) : (
-                    data.recentActivity.map((log) => (
-                      <div key={log.id} className="space-y-1">
-                        <div className="text-[9px] font-mono font-bold tabular-nums text-muted-foreground/60">
-                          {log.timeLabel}
-                        </div>
-                        <div className="text-[11px] font-medium leading-relaxed">{log.title}</div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                )}
               </div>
 
-              <div className="flex h-[300px] flex-col overflow-hidden rounded-sm border border-white/5 bg-[#0a0a0a] lg:col-span-8">
-                <div className="flex items-center justify-between border-b border-white/5 bg-white/2 px-4 py-2">
+              <div className="lc-panel lg:col-span-2 overflow-hidden">
+                <div className="flex items-center justify-between border-b border-border/30 bg-surface-inset px-4 py-2">
                   <div className="flex gap-1.5">
-                    <div className="h-2.5 w-2.5 rounded-full border border-red-500/40 bg-red-500/20" />
-                    <div className="h-2.5 w-2.5 rounded-full border border-amber-500/40 bg-amber-500/20" />
-                    <div className="h-2.5 w-2.5 rounded-full border border-emerald-500/40 bg-emerald-500/20" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-red-500/40" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/40" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-green-500/40" />
                   </div>
-                  <div className="text-[10px] font-mono text-muted-foreground/40">
-                    ~/curriculum · {data.activityYearLabel}
-                  </div>
-                  <div className="w-4" />
+                  <span className="text-[10px] font-mono text-muted-foreground/50">~/curriculum &middot; {data.activityYearLabel}</span>
+                  <div className="w-8" />
                 </div>
-                <div className="flex-1 overflow-y-auto p-6 font-mono text-[11px] leading-relaxed">
-                  <p className="mb-4 text-muted-foreground">{data.headline.subtitle}</p>
-                  {data.activeModule ? (
-                    <div className="mb-4 space-y-2 text-muted-foreground">
+                <div className="p-5 font-mono text-[12px] leading-relaxed text-muted-foreground terminal-bg min-h-[180px]">
+                  <p className="mb-3">{data.headline.subtitle}</p>
+                  {data.activeModule && (
+                    <div className="mb-3 space-y-1">
                       <div>
-                        <span className="text-muted-foreground/60">Active module:</span>{" "}
-                        <span className="text-foreground">{data.activeModule.title}</span>
+                        <span className="text-muted-foreground/50">$ module --active</span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground/60">Progress:</span>{" "}
-                        <span className="tabular-nums text-primary">
-                          {data.activeModule.progressPercent}%
-                        </span>
+                        <span className="text-foreground">{data.activeModule.title}</span>
+                        <span className="text-primary ml-3">{data.activeModule.progressPercent}%</span>
                       </div>
                     </div>
-                  ) : null}
-                  <div className="border-t border-white/5 pt-4 text-muted-foreground">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                      Coach hint
-                    </span>
-                    <p className="mt-2">{data.coachHint}</p>
+                  )}
+                  <div className="border-t border-border/20 pt-3">
+                    <span className="text-muted-foreground/50">$ coach --hint</span>
+                    <p className="mt-1">{data.coachHint}</p>
                   </div>
-                  <div className="mt-4 flex gap-2">
+                  <div className="mt-3 flex gap-2">
                     <span className="text-primary">$</span>
-                    <span className="h-4 w-1.5 animate-pulse bg-primary/60" />
+                    <span className="h-4 w-1.5 animate-cursor-blink bg-primary/70" />
                   </div>
                 </div>
               </div>

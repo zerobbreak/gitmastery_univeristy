@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import { Providers } from "@/components/Providers";
 
+import "@fontsource-variable/dm-sans";
+import "@fontsource/jetbrains-mono";
 import "./globals.css";
 
 /** Avoid static prerender with Clerk (invalid/missing keys break `next build`). */
@@ -19,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col font-body">
         <Providers>{children}</Providers>
       </body>
     </html>

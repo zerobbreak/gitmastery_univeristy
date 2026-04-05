@@ -37,6 +37,23 @@ export async function POST(req: NextRequest) {
       ? (body as { line: string }).line
       : null;
 
+  let recentCommands: string[] = [];
+  if (
+    typeof body === "object" &&
+    body !== null &&
+    "recentCommands" in body &&
+    Array.isArray((body as { recentCommands: unknown }).recentCommands)
+  ) {
+    const rc = (body as { recentCommands: unknown[] }).recentCommands;
+    if (rc.every((x) => typeof x === "string")) {
+      recentCommands = rc
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 30)
+        .map((s) => (s.length > 500 ? s.slice(0, 500) : s));
+    }
+  }
+
   if (!line?.trim().toLowerCase().startsWith("tutor")) {
     return NextResponse.json(
       { error: "Line must start with tutor" },
@@ -59,7 +76,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const text = await generateTutorHelp(rest);
+    const text = await generateTutorHelp(rest, recentCommands);
     return NextResponse.json(
       {
         lines: splitLines(text),

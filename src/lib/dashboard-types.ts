@@ -29,6 +29,8 @@ export type DashboardPayload = {
     xpReward: number;
     progressPercent: number;
     videoBriefAvailable: boolean;
+    /** Lesson or track URL to resume where the learner left off */
+    resumeHref: string;
   } | null;
   learningPath: Array<{
     moduleId: string;
@@ -38,6 +40,7 @@ export type DashboardPayload = {
     done: boolean;
     status: LearningPathModuleStatus;
     trackYear: number;
+    resumeHref: string;
   }>;
   leaderboardPreview: Array<{
     rank: number;
@@ -53,4 +56,6 @@ export type DashboardPayload = {
   heatmap: number[];
   coachHint: string;
   activityYearLabel: string;
+  /** Challenge ids the user has completed (for lesson UI / unlocks). */
+  completedChallengeIds: string[];
 };

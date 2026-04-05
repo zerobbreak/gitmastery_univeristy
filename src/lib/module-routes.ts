@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
-/** URL segment for each academic track (matches roadmap ids in Modules). */
-export const TRACK_IDS = ["foundations", "architecture", "mastery"] as const;
+/** URL segment for each difficulty tier (Problems tabs + lesson routes). */
+export const TRACK_IDS = ["foundations", "intermediate", "pro"] as const;
 export type TrackId = (typeof TRACK_IDS)[number];
 
 export function isTrackId(value: string): value is TrackId {
@@ -30,7 +30,6 @@ export interface TrackModuleDef {
   summary: string;
   bullets: string[];
   iconName: ModuleIconName;
-  challenges?: ChallengeDef[];
 }
 
 export interface TrackDef {
@@ -54,52 +53,46 @@ export const TRACKS: Record<TrackId, TrackDef> = {
     sub: "Core git & ecosystem basics",
     year: 1,
     level: "Beginner",
-    yearLabel: "Year 1: Foundations",
+    yearLabel: "Foundations · Beginner",
     defaultLessonSlug: "git-basics",
     locked: false,
     modules: [
       {
+        id: "PROG5112",
+        lessonSlug: "git-basics",
+        title: "Getting Started with Git",
+        status: "active",
+        summary: "Learn git init, staging, commits, and branches — the foundation of all version control.",
+        bullets: ["Initializing repos with git init", "Staging & committing changes", "Creating branches"],
+        iconName: "Code2",
+      },
+      {
         id: "IMAD5112",
         lessonSlug: "github-ecosystem",
         title: "GitHub Ecosystem Foundations",
-        status: "completed",
-        summary: "GitHub UI, remotes, and Actions at a high level.",
-        bullets: ["Basics of GitHub", "Pushing to repos", "Actions pipelines"],
+        status: "next",
+        summary: "Connect local Git to GitHub: authentication, remotes, pushes, and Actions.",
+        bullets: ["Pushing to GitHub", "Remotes & upstream", "Actions pipelines"],
         iconName: "GitBranch",
       },
       {
-        id: "PROG5112",
-        lessonSlug: "git-basics",
-        title: "Logic & Version Control",
-        status: "active",
-        summary: "Git objects, commits, branches — the core of version control.",
-        bullets: ["Git core basics", "Branching logic", "Commit standards"],
-        iconName: "Code2",
-        challenges: [
-          {
-            id: "CHAL101",
-            slug: "feature-branching-101",
-            title: "Feature Branching 101",
-            difficulty: "EASY",
-            xp: 250,
-            description: "Branches are essential for parallel development. They allow you to work on new features without affecting the main branch stability. In this challenge, you need to isolate your upcoming \"Login\" feature into its own workspace.",
-            objectives: [
-              { id: "obj1", text: "Create branch feature-login", completed: true },
-              { id: "obj2", text: "Stage all current changes", completed: false },
-              { id: "obj3", text: "Commit changes with message \"init login\"", completed: false },
-            ],
-          },
-        ],
+        id: "PROG6212",
+        lessonSlug: "remote-management",
+        title: "Remote Repository Management",
+        status: "next",
+        summary: "Master working with remotes, forks, and keeping repositories in sync.",
+        bullets: ["Understanding remotes", "Multiple remotes", "Syncing forks"],
+        iconName: "GitBranch",
       },
     ],
   },
-  architecture: {
-    id: "architecture",
-    title: "Architecture",
-    sub: "Automation & testing scale",
+  intermediate: {
+    id: "intermediate",
+    title: "Intermediate",
+    sub: "Automation, testing, and team workflows at scale",
     year: 2,
     level: "Intermediate",
-    yearLabel: "Year 2: Architecture",
+    yearLabel: "Intermediate",
     defaultLessonSlug: "merge-conflicts",
     locked: false,
     modules: [
@@ -112,15 +105,33 @@ export const TRACKS: Record<TrackId, TrackDef> = {
         bullets: ["Automated testing", "CI/CD integration", "Conflict resolution"],
         iconName: "Layers",
       },
+      {
+        id: "PROG6213",
+        lessonSlug: "pull-requests",
+        title: "Pull Request Mastery",
+        status: "next",
+        summary: "Create effective PRs, conduct code reviews, and merge with confidence.",
+        bullets: ["Creating PRs", "Code review workflow", "Merge strategies"],
+        iconName: "GitBranch",
+      },
+      {
+        id: "PROG6214",
+        lessonSlug: "git-recovery",
+        title: "Git History & Recovery",
+        status: "next",
+        summary: "Navigate history, recover lost work, and debug with bisect.",
+        bullets: ["Reading history", "Reflog recovery", "Cherry-pick & bisect"],
+        iconName: "Layers",
+      },
     ],
   },
-  mastery: {
-    id: "mastery",
-    title: "Mastery",
-    sub: "Enterprise management",
+  pro: {
+    id: "pro",
+    title: "Pro",
+    sub: "Enterprise governance and advanced automation",
     year: 3,
     level: "Pro",
-    yearLabel: "Year 3: Mastery",
+    yearLabel: "Pro",
     defaultLessonSlug: "branch-mastery",
     locked: true,
     modules: [
@@ -157,6 +168,16 @@ export function getModuleByLesson(
   return TRACKS[track].modules.find((m) => m.lessonSlug === lessonSlug) ?? null;
 }
 
+export function getTrackModuleDefByModuleId(
+  moduleId: string,
+): { track: TrackId; lesson: TrackModuleDef } | null {
+  for (const trackId of TRACK_IDS) {
+    const mod = TRACKS[trackId].modules.find((m) => m.id === moduleId);
+    if (mod) return { track: trackId, lesson: mod };
+  }
+  return null;
+}
+
 /** Resolve curriculum module id to App Router segment (matches dashboard `modules.id`). */
 export function getModuleRouteById(
   moduleId: string,
@@ -168,13 +189,16 @@ export function getModuleRouteById(
   return null;
 }
 
-export function getChallengeBySlug(
-  track: TrackId,
-  lessonSlug: string,
-  challengeSlug: string,
-): ChallengeDef | null {
-  const mod = getModuleByLesson(track, lessonSlug);
-  return mod?.challenges?.find((c) => c.slug === challengeSlug) ?? null;
+/**
+ * Deep link for dashboard / “resume” navigation. Locked tracks use the track overview
+ * (lessons 404 until unlocked); otherwise the lesson page for that module.
+ */
+export function getModuleResumeHref(moduleId: string): string {
+  const route = getModuleRouteById(moduleId);
+  if (!route) return "/modules";
+  const track = TRACKS[route.track];
+  if (track.locked) return trackPath(route.track);
+  return lessonPath(route.track, route.lessonSlug);
 }
 
 export function challengePath(
@@ -185,16 +209,31 @@ export function challengePath(
   return `/modules/${track}/${lessonSlug}/${challengeSlug}`;
 }
 
-/** Resolve track + lesson + challenge or call `notFound()`. */
-export function assertChallenge(
-  trackParam: string,
-  lessonParam: string,
-  challengeParam: string,
-): { track: TrackId; lesson: TrackModuleDef; challenge: ChallengeDef } {
-  const { track, lesson } = assertLesson(trackParam, lessonParam);
-  const challenge = getChallengeBySlug(track, lesson.lessonSlug, challengeParam);
-  if (!challenge) notFound();
-  return { track, lesson, challenge };
+/**
+ * Next challenge in the same module (client fallback). `orderedSlugs` must match DB sort order.
+ */
+export function getNextHrefAfterChallengesInModule(
+  trackId: TrackId,
+  lessonSlug: string,
+  challengeSlug: string,
+  orderedSlugs: string[],
+): string {
+  const idx = orderedSlugs.indexOf(challengeSlug);
+  if (idx !== -1 && idx + 1 < orderedSlugs.length) {
+    return challengePath(trackId, lessonSlug, orderedSlugs[idx + 1]!);
+  }
+  return lessonPath(trackId, lessonSlug);
+}
+
+export function firstChallengePathOrLesson(
+  trackId: TrackId,
+  lessonSlug: string,
+  firstChallengeSlug: string | null,
+): string {
+  if (firstChallengeSlug) {
+    return challengePath(trackId, lessonSlug, firstChallengeSlug);
+  }
+  return lessonPath(trackId, lessonSlug);
 }
 
 /** Resolve track + lesson or call `notFound()`. */
@@ -208,4 +247,47 @@ export function assertLesson(
   const lesson = getModuleByLesson(track.id, lessonParam);
   if (!lesson) notFound();
   return { track: track.id, lesson };
+}
+
+/** Build URL path for a specific step within a lesson. */
+export function stepPath(track: TrackId, lessonSlug: string, stepNumber: number): string {
+  return `/modules/${track}/${lessonSlug}/step/${stepNumber}`;
+}
+
+/** Get navigation URLs for a step (prev, next, lesson index). */
+export function getStepNavigation(
+  track: TrackId,
+  lessonSlug: string,
+  stepNumber: number,
+  totalSteps: number,
+): {
+  prevHref: string | null;
+  nextHref: string | null;
+  lessonHref: string;
+  isFirstStep: boolean;
+  isLastStep: boolean;
+} {
+  const lessonHref = lessonPath(track, lessonSlug);
+  const isFirstStep = stepNumber === 1;
+  const isLastStep = stepNumber === totalSteps;
+
+  return {
+    prevHref: isFirstStep ? null : stepPath(track, lessonSlug, stepNumber - 1),
+    nextHref: isLastStep ? null : stepPath(track, lessonSlug, stepNumber + 1),
+    lessonHref,
+    isFirstStep,
+    isLastStep,
+  };
+}
+
+/** Resolve track + lesson + step or call `notFound()`. */
+export function assertStep(
+  trackParam: string,
+  lessonParam: string,
+  stepParam: string,
+): { track: TrackId; lesson: TrackModuleDef; stepNumber: number } {
+  const { track, lesson } = assertLesson(trackParam, lessonParam);
+  const stepNumber = parseInt(stepParam, 10);
+  if (isNaN(stepNumber) || stepNumber < 1) notFound();
+  return { track, lesson, stepNumber };
 }

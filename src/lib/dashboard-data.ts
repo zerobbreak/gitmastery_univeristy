@@ -11,6 +11,7 @@ import {
 import type { InferSelectModel } from "drizzle-orm";
 
 import type { DashboardPayload, LearningPathModuleStatus } from "@/lib/dashboard-types";
+import { getModuleResumeHref } from "@/lib/module-routes";
 
 import { getDb, schema } from "../../db/index";
 
@@ -18,6 +19,7 @@ const {
   activityEvents,
   modules,
   userActivityDays,
+  userChallengeCompletions,
   userModuleProgress,
   userProfiles,
 } = schema;
@@ -72,11 +74,11 @@ function pickCoachHint(clerkUserId: string): string {
   return COACH_HINTS[h] ?? COACH_HINTS[0];
 }
 
-function masteryLevelFromXp(totalXp: number): number {
+export function masteryLevelFromXp(totalXp: number): number {
   return Math.max(1, Math.min(99, 1 + Math.floor(totalXp / 1000)));
 }
 
-async function ensureModuleProgressForUser(
+export async function ensureModuleProgressForUser(
   db: ReturnType<typeof getDb>,
   profileId: number,
 ): Promise<void> {
@@ -108,6 +110,19 @@ async function ensureModuleProgressForUser(
       })
       .where(eq(userProfiles.id, profileId));
     return;
+  }
+
+  const existingIds = new Set(existing.map((e) => e.moduleId));
+  const missingCatalog = catalog.filter((c) => !existingIds.has(c.id));
+  if (missingCatalog.length > 0) {
+    await db.insert(userModuleProgress).values(
+      missingCatalog.map((mod) => ({
+        userProfileId: profileId,
+        moduleId: mod.id,
+        status: "locked" as const,
+        progressPercent: 0,
+      })),
+    );
   }
 
   const profileRow = await db
@@ -167,6 +182,10 @@ export async function buildDashboardPayload(
   }
 
   await ensureModuleProgressForUser(db, profile.id);
+  const { recomputeModuleProgressFromCompletions } = await import(
+    "./challenge-progression"
+  );
+  await recomputeModuleProgressFromCompletions(db, profile.id);
 
   const [refreshed] = await db
     .select()
@@ -259,6 +278,7 @@ export async function buildDashboardPayload(
       done: pr?.status === "completed",
       status,
       trackYear: m.trackYear,
+      resumeHref: getModuleResumeHref(m.id),
     };
   });
 
@@ -320,6 +340,12 @@ export async function buildDashboardPayload(
 
   const activityYearLabel = `${ytd} events this year`;
 
+  const challengeCompletionRows = await db
+    .select({ challengeId: userChallengeCompletions.challengeId })
+    .from(userChallengeCompletions)
+    .where(eq(userChallengeCompletions.userProfileId, profile.id));
+  const completedChallengeIds = challengeCompletionRows.map((r) => r.challengeId);
+
   const welcomeName = profile.displayName ?? displayName;
   let subtitle = "Pick a module on the curriculum page to start your journey.";
   if (activeModuleRow) {
@@ -350,6 +376,7 @@ export async function buildDashboardPayload(
           xpReward: activeModuleRow.xpReward,
           progressPercent: activeProgress,
           videoBriefAvailable: Boolean(activeModuleRow.videoUrl),
+          resumeHref: getModuleResumeHref(activeModuleRow.id),
         }
       : null,
     learningPath,
@@ -358,5 +385,6 @@ export async function buildDashboardPayload(
     heatmap,
     coachHint: pickCoachHint(clerkUserId),
     activityYearLabel,
+    completedChallengeIds,
   };
 }

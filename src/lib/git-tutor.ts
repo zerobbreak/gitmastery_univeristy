@@ -12,6 +12,19 @@ export function isTutorCommand(rawInput: string): boolean {
   return first === ACTIVATION;
 }
 
+/** Lines typed in the challenge terminal before the current tutor request (git/shell only, no tutor lines). */
+export function extractRecentGitCommands(
+  commandTexts: string[],
+  max = 20,
+): string[] {
+  const out: string[] = [];
+  for (const text of commandTexts) {
+    const t = text.trim();
+    if (t && !isTutorCommand(t)) out.push(t);
+  }
+  return out.slice(-max);
+}
+
 type Topic =
   | "overview"
   | "status"

@@ -22,6 +22,26 @@ export const modules = pgTable("modules", {
   videoUrl: text("video_url"),
 });
 
+/** Git challenges (requirements, copy, XP) — source of truth for challenge UI + validation. */
+export const challenges = pgTable(
+  "challenges",
+  {
+    id: text("id").primaryKey(),
+    moduleId: text("module_id")
+      .notNull()
+      .references(() => modules.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    difficulty: text("difficulty").notNull(),
+    xp: integer("xp").notNull(),
+    sortOrder: smallint("sort_order").notNull().default(0),
+    /** JSON array: [{ "id": "obj1", "text": "..." }] */
+    objectivesJson: text("objectives_json").notNull(),
+  },
+  (t) => [uniqueIndex("challenges_module_slug").on(t.moduleId, t.slug)],
+);
+
 /** App profile keyed by Clerk user id (synced on first API touch). */
 export const userProfiles = pgTable("user_profiles", {
   id: serial("id").primaryKey(),
@@ -78,6 +98,23 @@ export const activityEvents = pgTable("activity_events", {
     .defaultNow()
     .notNull(),
 });
+
+/** One row per user per challenge; prevents double XP awards. */
+export const userChallengeCompletions = pgTable(
+  "user_challenge_completions",
+  {
+    id: serial("id").primaryKey(),
+    userProfileId: integer("user_profile_id")
+      .notNull()
+      .references(() => userProfiles.id, { onDelete: "cascade" }),
+    challengeId: text("challenge_id").notNull(),
+    xpAwarded: integer("xp_awarded").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [uniqueIndex("ucc_user_challenge").on(t.userProfileId, t.challengeId)],
+);
 
 /** One row per calendar day for GitHub-style heatmap (0–4 intensity). */
 export const userActivityDays = pgTable(
