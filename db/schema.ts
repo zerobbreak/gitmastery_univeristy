@@ -107,7 +107,9 @@ export const userChallengeCompletions = pgTable(
     userProfileId: integer("user_profile_id")
       .notNull()
       .references(() => userProfiles.id, { onDelete: "cascade" }),
-    challengeId: text("challenge_id").notNull(),
+    challengeId: text("challenge_id")
+      .notNull()
+      .references(() => challenges.id, { onDelete: "cascade" }),
     xpAwarded: integer("xp_awarded").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()

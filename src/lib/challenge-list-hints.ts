@@ -8,7 +8,7 @@ export function getChallengeListHint(challenge: ChallengeDef): string {
     case "configure-fork-remotes":
       return "About wiring your fork to the original project and pulling its updates safely.";
     case "pr-workflow":
-      return "About the usual flow: split work onto a branch, commit locally, then get it to the remote.";
+      return "About branching from main, recording a commit (you pick the message), then pushing with upstream tracking.";
     case "recover-lost-commit":
       return "About finding a commit Git still remembers and getting your tree back to a good state.";
     case "github-ecosystem-lab":

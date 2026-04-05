@@ -19,7 +19,6 @@ const {
   activityEvents,
   modules,
   userActivityDays,
-  userChallengeCompletions,
   userModuleProgress,
   userProfiles,
 } = schema;
@@ -340,12 +339,6 @@ export async function buildDashboardPayload(
 
   const activityYearLabel = `${ytd} events this year`;
 
-  const challengeCompletionRows = await db
-    .select({ challengeId: userChallengeCompletions.challengeId })
-    .from(userChallengeCompletions)
-    .where(eq(userChallengeCompletions.userProfileId, profile.id));
-  const completedChallengeIds = challengeCompletionRows.map((r) => r.challengeId);
-
   const welcomeName = profile.displayName ?? displayName;
   let subtitle = "Pick a module on the curriculum page to start your journey.";
   if (activeModuleRow) {
@@ -385,6 +378,5 @@ export async function buildDashboardPayload(
     heatmap,
     coachHint: pickCoachHint(clerkUserId),
     activityYearLabel,
-    completedChallengeIds,
   };
 }

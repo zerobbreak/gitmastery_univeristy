@@ -14,6 +14,7 @@ import {
   stepPath,
   trackPath,
   type ChallengeDef,
+  type ModuleStatus,
   type TrackId,
   type TrackModuleDef,
 } from "@/lib/module-routes";
@@ -34,17 +35,20 @@ export function ModuleLessonView({
   moduleDef,
   challenges,
   completedChallengeIds,
+  liveModuleStatus,
 }: {
   trackId: TrackId;
   moduleDef: TrackModuleDef;
   challenges: ChallengeDef[];
   completedChallengeIds: string[];
+  liveModuleStatus?: ModuleStatus | null;
 }) {
   const content = getLessonContent(trackId, moduleDef.lessonSlug);
   const steps = getStepsForModule(moduleDef.id);
   const moduleHasSteps = hasSteps(moduleDef.id);
   const trackHref = trackPath(trackId);
   const doneSet = new Set(completedChallengeIds);
+  const displayStatus = liveModuleStatus ?? moduleDef.status;
 
   if (!content && !moduleHasSteps) {
     return (
@@ -82,11 +86,11 @@ export function ModuleLessonView({
               {content?.title ?? moduleDef.title}
             </h1>
             <div className={`lc-badge shrink-0 ${
-              moduleDef.status === "completed" ? "text-easy bg-easy/10"
-              : moduleDef.status === "active" ? "text-primary bg-primary/10"
+              displayStatus === "completed" ? "text-easy bg-easy/10"
+              : displayStatus === "active" ? "text-primary bg-primary/10"
               : "text-muted-foreground bg-secondary"
             }`}>
-              {moduleDef.status}
+              {displayStatus}
             </div>
           </div>
           {content?.eyebrow && (

@@ -8,13 +8,23 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   lessonPath,
+  type ModuleStatus,
   type TrackDef,
   type TrackId,
   type TrackModuleDef,
 } from "@/lib/module-routes";
 
-function moduleCta(mod: TrackModuleDef, track: TrackId, trackLocked: boolean) {
-  if (trackLocked || mod.status === "locked") {
+function resolveLiveStatus(
+  mod: TrackModuleDef,
+  progressMap: Map<string, ModuleStatus>,
+): ModuleStatus {
+  const liveStatus = progressMap.get(mod.id);
+  if (liveStatus) return liveStatus;
+  return mod.status;
+}
+
+function moduleCta(mod: TrackModuleDef, track: TrackId, trackLocked: boolean, status: ModuleStatus) {
+  if (trackLocked || status === "locked") {
     return (
       <Button
         disabled
@@ -25,7 +35,7 @@ function moduleCta(mod: TrackModuleDef, track: TrackId, trackLocked: boolean) {
     );
   }
   const href = lessonPath(track, mod.lessonSlug);
-  if (mod.status === "completed") {
+  if (status === "completed") {
     return (
       <Button
         asChild
@@ -35,7 +45,7 @@ function moduleCta(mod: TrackModuleDef, track: TrackId, trackLocked: boolean) {
       </Button>
     );
   }
-  if (mod.status === "active") {
+  if (status === "active") {
     return (
       <Button
         asChild
@@ -55,7 +65,13 @@ function moduleCta(mod: TrackModuleDef, track: TrackId, trackLocked: boolean) {
   );
 }
 
-export function ModuleTrackView({ track }: { track: TrackDef }) {
+export function ModuleTrackView({
+  track,
+  progressMap,
+}: {
+  track: TrackDef;
+  progressMap: Map<string, ModuleStatus>;
+}) {
   const locked = track.locked;
   const defaultHref = lessonPath(track.id, track.defaultLessonSlug);
 
@@ -108,36 +124,39 @@ export function ModuleTrackView({ track }: { track: TrackDef }) {
               Modules
             </h2>
             <ul className="space-y-6">
-              {track.modules.map((mod) => (
-                <li
-                  key={mod.id}
-                  className={`border border-white/5 p-8 ${locked ? "bg-white/[0.005] opacity-60" : "bg-white/[0.01]"}`}
-                >
-                  <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-                    <div className="space-y-3">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        {mod.id}
-                      </span>
-                      <h3 className="text-xl font-bold tracking-tight">{mod.title}</h3>
-                      <p className="text-sm text-muted-foreground">{mod.summary}</p>
-                      <ul className="space-y-2">
-                        {mod.bullets.map((b) => (
-                          <li key={b} className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <CheckCircle2
-                              size={12}
-                              className={
-                                mod.status === "completed" ? "text-emerald-500" : "text-muted-foreground/40"
-                              }
-                            />
-                            {b}
-                          </li>
-                        ))}
-                      </ul>
+              {track.modules.map((mod) => {
+                const status = resolveLiveStatus(mod, progressMap);
+                return (
+                  <li
+                    key={mod.id}
+                    className={`border border-white/5 p-8 ${locked ? "bg-white/[0.005] opacity-60" : "bg-white/[0.01]"}`}
+                  >
+                    <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+                      <div className="space-y-3">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                          {mod.id}
+                        </span>
+                        <h3 className="text-xl font-bold tracking-tight">{mod.title}</h3>
+                        <p className="text-sm text-muted-foreground">{mod.summary}</p>
+                        <ul className="space-y-2">
+                          {mod.bullets.map((b) => (
+                            <li key={b} className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <CheckCircle2
+                                size={12}
+                                className={
+                                  status === "completed" ? "text-emerald-500" : "text-muted-foreground/40"
+                                }
+                              />
+                              {b}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="w-full shrink-0 md:w-48">{moduleCta(mod, track.id, locked, status)}</div>
                     </div>
-                    <div className="w-full shrink-0 md:w-48">{moduleCta(mod, track.id, locked)}</div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>

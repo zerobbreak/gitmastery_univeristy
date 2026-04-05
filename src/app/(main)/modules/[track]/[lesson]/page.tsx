@@ -1,14 +1,14 @@
 import { auth } from "@clerk/nextjs/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { ModuleShell } from "@/components/ModuleShell";
 import { ModuleLessonView } from "@/components/ModuleLessonView";
 import { recomputeModuleProgressFromCompletions } from "@/lib/challenge-progression";
 import { listChallengesForModule } from "@/lib/challenges-db";
-import { assertLesson } from "@/lib/module-routes";
+import { assertLesson, type ModuleStatus } from "@/lib/module-routes";
 import { getDb, schema } from "../../../../../../db/index";
 
-const { userChallengeCompletions, userProfiles } = schema;
+const { userChallengeCompletions, userModuleProgress, userProfiles } = schema;
 
 export default async function ModuleLessonPage({
   params,
@@ -23,6 +23,8 @@ export default async function ModuleLessonPage({
 
   const { userId } = await auth();
   let completedChallengeIds: string[] = [];
+  let liveModuleStatus: ModuleStatus | null = null;
+
   if (userId) {
     const [profile] = await db
       .select()
@@ -36,6 +38,23 @@ export default async function ModuleLessonPage({
         .from(userChallengeCompletions)
         .where(eq(userChallengeCompletions.userProfileId, profile.id));
       completedChallengeIds = rows.map((r) => r.challengeId);
+
+      const [progressRow] = await db
+        .select()
+        .from(userModuleProgress)
+        .where(
+          and(
+            eq(userModuleProgress.userProfileId, profile.id),
+            eq(userModuleProgress.moduleId, moduleDef.id),
+          ),
+        )
+        .limit(1);
+      if (progressRow) {
+        const s = progressRow.status;
+        if (s === "completed" || s === "active" || s === "next" || s === "locked") {
+          liveModuleStatus = s;
+        }
+      }
     }
   }
 
@@ -46,6 +65,7 @@ export default async function ModuleLessonPage({
         moduleDef={moduleDef}
         challenges={challengesList}
         completedChallengeIds={completedChallengeIds}
+        liveModuleStatus={liveModuleStatus}
       />
     </ModuleShell>
   );

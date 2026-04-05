@@ -14,8 +14,22 @@ export function getInitialModifiedFromLesson(lessonContent: LessonContent): stri
 }
 
 function parseExpectedBranchFromObjective(text: string): string | null {
-  const m = text.match(/branch\s+([\w./-]+)/i);
-  return m?.[1] ?? null;
+  // "Create branch NAME" — e.g. Create branch feature-login
+  let m = text.match(/create\s+branch\s+([\w./-]+)/i);
+  if (m) return m[1];
+
+  // "Create NAME branch ..." — e.g. Create feature branch from main (must not match before "Create branch NAME")
+  m = text.match(/create\s+([\w./-]+)\s+branch\b/i);
+  if (m) return m[1];
+
+  // Fallback: word after "branch " (reject "from" from phrases like "branch from main")
+  m = text.match(/branch\s+([\w./-]+)/i);
+  if (m) {
+    const name = m[1];
+    if (name.toLowerCase() === "from") return null;
+    return name;
+  }
+  return null;
 }
 
 function parseExpectedCommitMessageFromObjective(text: string): string | null {
@@ -36,14 +50,29 @@ function isResolveAllConflictsObjective(text: string): boolean {
   return /resolve\s+all\s+conflict\s*markers?/i.test(text);
 }
 
+/** Same source as Git: working tree, with legacy `fileContents` fallback. */
+function conflictFileContent(state: GitSimState, filename: string): string | undefined {
+  return state.workingTree?.[filename] ?? state.fileContents?.[filename];
+}
+
 export function objectiveDone(
   text: string,
   state: GitSimState,
   initialModified: string[],
 ): boolean {
+  // Use HEAD for branch name (new state) with fallback to branch (legacy)
+  const currentBranch = state.HEAD ?? state.branch;
+
+  // Before generic "must equal parsed name" — recovery allows any branch whose name contains recovery/recover
+  if (/recovery branch/i.test(text) || /create.*branch.*from.*commit/i.test(text)) {
+    const branches = Object.keys(state.refs ?? {});
+    return branches.some((b) => b.includes("recovery") || b.includes("recover"));
+  }
+
   const branch = parseExpectedBranchFromObjective(text);
-  if (branch && /create|branch/i.test(text)) {
-    return state.branch === branch;
+  // Require "create" so lines like "Push branch with upstream tracking" are not parsed as branch name "with"
+  if (branch && /create/i.test(text)) {
+    return currentBranch === branch;
   }
   if (isStageAllObjective(text)) {
     const relevantFiles = state.conflictFiles?.length ? state.conflictFiles : initialModified;
@@ -54,6 +83,9 @@ export function objectiveDone(
   if (/commit/i.test(text)) {
     const expected = parseExpectedCommitMessageFromObjective(text);
     if (expected) return state.lastCommitMessage === expected;
+    if (/make\s+and\s+commit/i.test(text)) {
+      return state.lastCommitMessage !== null;
+    }
   }
   if (/upstream remote/i.test(text) && /add/i.test(text)) {
     return Boolean(state.remotes?.upstream);
@@ -64,16 +96,27 @@ export function objectiveDone(
   if (/fetch from upstream/i.test(text)) {
     return Boolean(state.fetchedRemotes?.includes("upstream"));
   }
+  
+  // Push objectives
+  if (/push/i.test(text) && /upstream tracking/i.test(text)) {
+    return Boolean(state.pushedRefs && Object.keys(state.pushedRefs).length > 0);
+  }
+  
+  // Reflog objectives
+  if (/reflog/i.test(text) && /find/i.test(text)) {
+    return state.reflog && state.reflog.length > 1;
+  }
+
   const resolveFile = parseResolveConflictFile(text);
   if (resolveFile) {
-    const content = state.fileContents?.[resolveFile];
+    const content = conflictFileContent(state, resolveFile);
     if (!content) return false;
     return !hasConflictMarkers(content);
   }
   if (isResolveAllConflictsObjective(text)) {
     if (!state.conflictFiles || state.conflictFiles.length === 0) return true;
     return state.conflictFiles.every((f) => {
-      const content = state.fileContents?.[f];
+      const content = conflictFileContent(state, f);
       return content && !hasConflictMarkers(content);
     });
   }
@@ -107,7 +150,7 @@ const STATIC_OBJECTIVE_HINTS: Record<string, string> = {
   "Create feature branch from main":
     "You're starting feature work from the main line so changes stay on a dedicated branch.",
   "Make and commit changes":
-    "Turn edits in your working tree into a real commit the simulator can see.",
+    "Stage your modified files, then run git commit with -m and a message you choose. The simulator only checks that a commit exists, not the exact wording of the message.",
   "Push branch with upstream tracking":
     "Publishing your branch and linking it to a remote branch so the repo knows where future pushes go.",
   "Use reflog to find lost commit":
@@ -149,7 +192,7 @@ export function staticObjectiveHint(objectiveText: string): string {
   if (exact) return exact;
 
   const branch = parseExpectedBranchFromObjective(objectiveText);
-  if (branch && /create|branch/i.test(objectiveText)) {
+  if (branch && /create/i.test(objectiveText)) {
     return "You need a named branch for this work and your HEAD should be on it - not still on the default line.";
   }
   if (isStageAllObjective(objectiveText)) {
@@ -190,8 +233,9 @@ export function hintForObjectiveIncomplete(
     return "";
   }
   const branch = parseExpectedBranchFromObjective(objectiveText);
-  if (branch && /create|branch/i.test(objectiveText)) {
-    return `Right now you're on "${state.branch}"; the task expects you to be on the branch named in the objective.`;
+  if (branch && /create/i.test(objectiveText)) {
+    const on = state.HEAD ?? state.branch;
+    return `Right now you're on "${on}"; the task expects you to be on the branch named in the objective.`;
   }
   if (isStageAllObjective(objectiveText)) {
     return "Some modified files still aren't staged - the next commit should include all of them.";
@@ -200,6 +244,9 @@ export function hintForObjectiveIncomplete(
     const expected = parseExpectedCommitMessageFromObjective(objectiveText);
     if (expected) {
       return "Either nothing is committed yet, or the last commit message doesn't match what the objective asked for.";
+    }
+    if (/make\s+and\s+commit/i.test(objectiveText)) {
+      return "Stage your changes (git add), then git commit -m with any message you like. The simulator only checks that a commit was recorded, not the exact message text.";
     }
   }
   if (/upstream remote/i.test(objectiveText) && /add/i.test(objectiveText)) {
@@ -213,7 +260,7 @@ export function hintForObjectiveIncomplete(
   }
   const resolveFile = parseResolveConflictFile(objectiveText);
   if (resolveFile) {
-    const content = state.fileContents?.[resolveFile];
+    const content = conflictFileContent(state, resolveFile);
     if (!content) return `The file "${resolveFile}" doesn't exist in this challenge.`;
     if (hasConflictMarkers(content)) {
       return `The file still contains conflict markers. Open the Files tab, edit "${resolveFile}", and remove all <<<<<<, ======, >>>>>> lines.`;
@@ -222,7 +269,7 @@ export function hintForObjectiveIncomplete(
   }
   if (isResolveAllConflictsObjective(objectiveText)) {
     const unresolved = state.conflictFiles?.filter((f) => {
-      const c = state.fileContents?.[f];
+      const c = conflictFileContent(state, f);
       return c && hasConflictMarkers(c);
     }) ?? [];
     if (unresolved.length > 0) {
@@ -236,11 +283,16 @@ export function hintForObjectiveIncomplete(
 export function isGitSimState(value: unknown): value is GitSimState {
   if (value === null || typeof value !== "object") return false;
   const o = value as Record<string, unknown>;
-  if (typeof o.branch !== "string") return false;
+  
+  // Support both new (HEAD) and legacy (branch) state
+  const hasBranch = typeof o.branch === "string";
+  const hasHead = typeof o.HEAD === "string";
+  if (!hasBranch && !hasHead) return false;
+  
   if (o.lastCommitMessage !== null && typeof o.lastCommitMessage !== "string") return false;
   if (typeof o.files !== "object" || o.files === null) return false;
   for (const v of Object.values(o.files)) {
-    if (v !== "clean" && v !== "modified" && v !== "staged") return false;
+    if (v !== "clean" && v !== "modified" && v !== "staged" && v !== "untracked" && v !== "deleted") return false;
   }
   if (o.remotes !== undefined) {
     if (typeof o.remotes !== "object" || o.remotes === null) return false;

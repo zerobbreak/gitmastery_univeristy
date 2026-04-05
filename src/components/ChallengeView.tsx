@@ -27,8 +27,14 @@ import {
   hasConflictMarkers,
   runGitCommand,
   statusBarModifiedCount,
+  syncFileStatesFromWorkingTree,
   type GitSimState,
 } from "@/lib/git-emulator";
+import {
+  isShellCommand,
+  runShellCommand,
+  getAutocompleteSuggestions,
+} from "@/lib/shell-emulator";
 import {
   getInitialModifiedFromLesson,
   hintForObjectiveIncomplete,
@@ -77,6 +83,7 @@ export function ChallengeView({
   challenge,
   lessonContent,
   challengeSlugsOrdered,
+  isAlreadyCompleted = false,
 }: {
   trackId: TrackId;
   lessonSlug: string;
@@ -86,6 +93,8 @@ export function ChallengeView({
   lessonContent: LessonContent;
   /** Same order as DB (for in-module next URL when API omits nextHref). */
   challengeSlugsOrdered: string[];
+  /** True if the user has already completed this challenge. */
+  isAlreadyCompleted?: boolean;
 }) {
   const { getToken } = useAuth();
   const router = useRouter();
@@ -117,6 +126,16 @@ export function ChallengeView({
   const [input, setInput] = useState("");
   const [stickyObjectiveIds, setStickyObjectiveIds] = useState(() => new Set<string>());
   const firstObjectiveXpShownRef = useRef(false);
+  
+  // Command history state
+  const [commandHistory, setCommandHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [savedInput, setSavedInput] = useState("");
+  
+  // Autocomplete state
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = useState(0);
 
   useEffect(() => {
     const initial = createInitialGitState({ modifiedPaths: initialModified, ...gitBootstrap });
@@ -126,6 +145,10 @@ export function ChallengeView({
     setInput("");
     setStickyObjectiveIds(new Set());
     firstObjectiveXpShownRef.current = false;
+    setCommandHistory([]);
+    setHistoryIndex(-1);
+    setSuggestions([]);
+    setShowSuggestions(false);
   }, [challenge.id, initialModified, welcomeBlock, gitBootstrap]);
 
   useEffect(() => {
@@ -223,12 +246,39 @@ export function ChallengeView({
       const trimmed = raw.trim();
       if (!trimmed) return;
 
+      // Add to command history
+      setCommandHistory((prev) => {
+        const filtered = prev.filter((cmd) => cmd !== trimmed);
+        return [trimmed, ...filtered].slice(0, 50);
+      });
+      setHistoryIndex(-1);
+      setSavedInput("");
+
       if (isTutorCommand(trimmed)) {
         const cmdTexts = lines
           .filter((row): row is { kind: "cmd"; text: string } => row.kind === "cmd")
           .map((row) => row.text);
         const recentCommands = extractRecentGitCommands(cmdTexts);
         void runTutorAsync(trimmed, recentCommands);
+        return;
+      }
+
+      // Check if it's a shell command
+      if (isShellCommand(trimmed)) {
+        const result = runShellCommand(gitRef.current, trimmed);
+        gitRef.current = result.state;
+        setGitState(result.state);
+        
+        if (result.clearTerminal) {
+          setLines([welcomeBlock]);
+          return;
+        }
+        
+        setLines((prev) => {
+          const next: TerminalLine[] = [...prev, { kind: "cmd", text: trimmed }];
+          if (result.outputLines.length > 0) next.push({ kind: "out", lines: result.outputLines });
+          return next;
+        });
         return;
       }
 
@@ -241,13 +291,103 @@ export function ChallengeView({
         return next;
       });
     },
-    [runTutorAsync, lines],
+    [runTutorAsync, lines, welcomeBlock],
   );
 
   const onSubmitInput = () => {
     const v = input;
     setInput("");
+    setShowSuggestions(false);
     runLine(v);
+  };
+
+  const handleInputChange = (value: string) => {
+    setInput(value);
+    setHistoryIndex(-1);
+    
+    // Update autocomplete suggestions
+    if (value.trim()) {
+      const newSuggestions = getAutocompleteSuggestions(value, gitRef.current);
+      setSuggestions(newSuggestions);
+      setShowSuggestions(newSuggestions.length > 0);
+      setSelectedSuggestion(0);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Tab completion
+    if (e.key === "Tab") {
+      e.preventDefault();
+      if (suggestions.length > 0) {
+        const parts = input.trim().split(/\s+/);
+        parts[parts.length - 1] = suggestions[selectedSuggestion];
+        setInput(parts.join(" ") + " ");
+        setShowSuggestions(false);
+      }
+      return;
+    }
+
+    // Autocomplete navigation
+    if (showSuggestions && suggestions.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedSuggestion((prev) => (prev + 1) % suggestions.length);
+        return;
+      }
+      if (e.key === "ArrowUp" && selectedSuggestion > 0) {
+        e.preventDefault();
+        setSelectedSuggestion((prev) => prev - 1);
+        return;
+      }
+    }
+
+    // Command history navigation
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (commandHistory.length === 0) return;
+      
+      if (historyIndex === -1) {
+        setSavedInput(input);
+        setHistoryIndex(0);
+        setInput(commandHistory[0]);
+      } else if (historyIndex < commandHistory.length - 1) {
+        setHistoryIndex((prev) => prev + 1);
+        setInput(commandHistory[historyIndex + 1]);
+      }
+      setShowSuggestions(false);
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (historyIndex === -1) return;
+      
+      if (historyIndex === 0) {
+        setHistoryIndex(-1);
+        setInput(savedInput);
+      } else {
+        setHistoryIndex((prev) => prev - 1);
+        setInput(commandHistory[historyIndex - 1]);
+      }
+      setShowSuggestions(false);
+      return;
+    }
+
+    // Submit on Enter
+    if (e.key === "Enter") {
+      e.preventDefault();
+      onSubmitInput();
+      return;
+    }
+
+    // Close suggestions on Escape
+    if (e.key === "Escape") {
+      setShowSuggestions(false);
+      return;
+    }
   };
 
   const branchDisplay = gitState.branch;
@@ -368,16 +508,14 @@ export function ChallengeView({
   const handleFileContentChange = useCallback((filename: string, newContent: string) => {
     setGitState((prev) => {
       if (!prev.fileContents) return prev;
-      const originalContent = gitBootstrap.fileContents?.[filename] ?? "";
-      const isDirty = newContent !== originalContent;
-      const newFileState = isDirty ? "modified" : "clean";
-      return {
+      const next: GitSimState = {
         ...prev,
-        fileContents: { ...prev.fileContents, [filename]: newContent },
-        files: { ...prev.files, [filename]: prev.files[filename] === "staged" ? "staged" : newFileState },
+        workingTree: { ...prev.workingTree, [filename]: newContent },
       };
+      syncFileStatesFromWorkingTree(next);
+      return next;
     });
-  }, [gitBootstrap.fileContents]);
+  }, []);
 
   useEffect(() => {
     if (isEditableChallenge && !selectedFile && fileTree.length > 0) {
@@ -446,6 +584,14 @@ export function ChallengeView({
                   <p className="text-xs leading-relaxed text-muted-foreground rounded-md bg-secondary/50 px-3 py-2">{scenarioFileLine}</p>
                 )}
               </div>
+
+              {/* Already completed banner */}
+              {isAlreadyCompleted && !submitBanner && (
+                <div className="rounded-md border border-easy/30 bg-easy/10 px-3 py-2.5 text-sm text-foreground flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-easy shrink-0" />
+                  <span>You&apos;ve already completed this challenge. Feel free to practice again!</span>
+                </div>
+              )}
 
               {/* Submit banners */}
               {submitBanner && (
@@ -836,24 +982,46 @@ export function ChallengeView({
                       <span className="text-[#3fb950]">~/project</span>
                       <span className="text-[#d2a8ff]">({branchDisplay})</span>
                       <span className="text-[#6e7681]">$</span>
-                      <input
-                        ref={terminalInputRef}
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            onSubmitInput();
-                          }
-                        }}
-                        className="min-w-48 flex-1 bg-transparent text-[#e6edf3] outline-none placeholder:text-[#484f58] font-mono caret-[#58a6ff]"
-                        placeholder="git status"
-                        spellCheck={false}
-                        autoCapitalize="off"
-                        autoCorrect="off"
-                        aria-label="Terminal input"
-                      />
+                      <div className="relative min-w-48 flex-1">
+                        <input
+                          ref={terminalInputRef}
+                          type="text"
+                          value={input}
+                          onChange={(e) => handleInputChange(e.target.value)}
+                          onKeyDown={handleKeyDown}
+                          onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                          className="w-full bg-transparent text-[#e6edf3] outline-none placeholder:text-[#484f58] font-mono caret-[#58a6ff]"
+                          placeholder="git status"
+                          spellCheck={false}
+                          autoCapitalize="off"
+                          autoCorrect="off"
+                          aria-label="Terminal input"
+                        />
+                        {showSuggestions && suggestions.length > 0 && (
+                          <div className="absolute bottom-full left-0 mb-1 w-48 max-h-32 overflow-y-auto rounded border border-white/10 bg-[#1c1c1c] shadow-lg">
+                            {suggestions.map((suggestion, i) => (
+                              <button
+                                key={suggestion}
+                                type="button"
+                                className={`w-full px-2 py-1 text-left text-[11px] ${
+                                  i === selectedSuggestion
+                                    ? "bg-[#58a6ff]/20 text-[#58a6ff]"
+                                    : "text-[#8b949e] hover:bg-white/5"
+                                }`}
+                                onMouseDown={() => {
+                                  const parts = input.trim().split(/\s+/);
+                                  parts[parts.length - 1] = suggestion;
+                                  setInput(parts.join(" ") + " ");
+                                  setShowSuggestions(false);
+                                  terminalInputRef.current?.focus();
+                                }}
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

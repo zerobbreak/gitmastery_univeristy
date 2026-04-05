@@ -56,6 +56,4 @@ export type DashboardPayload = {
   heatmap: number[];
   coachHint: string;
   activityYearLabel: string;
-  /** Challenge ids the user has completed (for lesson UI / unlocks). */
-  completedChallengeIds: string[];
 };

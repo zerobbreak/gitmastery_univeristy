@@ -1,13 +1,15 @@
 "use client";
 
-import { GitBranch, Radio, Terminal } from "lucide-react";
+import { GitBranch, Radio, Terminal, History, GitCommit } from "lucide-react";
 
+import { CommitGraph } from "@/components/CommitGraph";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getChallengeStatusScenario } from "@/lib/challenge-git-status-meta";
 import {
   formatGitStatus,
   statusBarModifiedCount,
   statusBarStagedCount,
+  getCommitHistory,
   type GitSimState,
 } from "@/lib/git-emulator";
 import type { ChallengeDef } from "@/lib/module-routes";
@@ -189,6 +191,53 @@ export function ChallengeGitStatusPanel({
                 Fetch activity
               </div>
               <FetchActivity state={gitState} />
+            </div>
+          </div>
+        )}
+
+        {/* Commit Graph */}
+        {getCommitHistory(gitState, 1).length > 0 && (
+          <div className="space-y-3 rounded-lg border border-white/8 bg-[#010409] p-4">
+            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#6e7681]">
+              <GitCommit size={12} className="text-[#58a6ff]" />
+              Commit History (<code className="text-[#79c0ff]">git log --oneline</code>)
+            </div>
+            <CommitGraph state={gitState} maxCommits={5} />
+          </div>
+        )}
+
+        {/* Reflog */}
+        {gitState.reflog && gitState.reflog.length > 1 && (
+          <div className="space-y-3 rounded-lg border border-white/8 bg-[#010409] p-4">
+            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#6e7681]">
+              <History size={12} className="text-[#f0883e]" />
+              Recent Actions (<code className="text-[#79c0ff]">git reflog</code>)
+            </div>
+            <div className="font-mono text-[11px] space-y-1">
+              {gitState.reflog.slice(0, 5).map((entry, i) => (
+                <div key={`${entry.sha}-${i}`} className="flex items-start gap-2">
+                  <span className="text-[#f0883e] shrink-0">{entry.sha.slice(0, 7)}</span>
+                  <span className="text-[#6e7681] shrink-0">HEAD@{"{" + i + "}"}</span>
+                  <span className="text-[#8b949e] truncate">{entry.action}: {entry.message}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Stash */}
+        {gitState.stash && gitState.stash.length > 0 && (
+          <div className="space-y-3 rounded-lg border border-white/8 bg-[#010409] p-4">
+            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#6e7681]">
+              <Terminal size={12} className="text-[#a371f7]" />
+              Stash (<code className="text-[#79c0ff]">git stash list</code>)
+            </div>
+            <div className="font-mono text-[11px] space-y-1">
+              {gitState.stash.map((entry, i) => (
+                <div key={entry.id} className="text-[#8b949e]">
+                  <span className="text-[#a371f7]">stash@{"{" + i + "}"}</span>: {entry.message}
+                </div>
+              ))}
             </div>
           </div>
         )}
