@@ -13,6 +13,8 @@ import {
   type TrackId,
   type TrackModuleDef,
 } from "@/lib/module-routes";
+import type { ModuleWorkshopPill } from "@/lib/dashboard-types";
+import { WORKSHOP_LABELS } from "@/lib/workshop-copy";
 
 function resolveLiveStatus(
   mod: TrackModuleDef,
@@ -68,11 +70,16 @@ function moduleCta(mod: TrackModuleDef, track: TrackId, trackLocked: boolean, st
 export function ModuleTrackView({
   track,
   progressMap,
+  trackLocked,
+  workshopPills,
 }: {
   track: TrackDef;
   progressMap: Map<string, ModuleStatus>;
+  /** When set (e.g. Pro until Intermediate is done), overrides \`track.locked\`. */
+  trackLocked?: boolean;
+  workshopPills?: Record<string, ModuleWorkshopPill>;
 }) {
-  const locked = track.locked;
+  const locked = trackLocked ?? track.locked;
   const defaultHref = lessonPath(track.id, track.defaultLessonSlug);
 
   return (
@@ -151,6 +158,38 @@ export function ModuleTrackView({
                             </li>
                           ))}
                         </ul>
+                        {workshopPills?.[mod.id] && !locked && (
+                          <div className="flex flex-wrap gap-2 pt-2">
+                            <span
+                              className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 border ${
+                                workshopPills[mod.id]!.quizDone
+                                  ? "border-emerald-500/30 text-emerald-500/90"
+                                  : "border-white/10 text-muted-foreground"
+                              }`}
+                            >
+                              {WORKSHOP_LABELS.quizDone}
+                              {workshopPills[mod.id]!.quizDone ? " ✓" : ""}
+                            </span>
+                            <span
+                              className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 border ${
+                                workshopPills[mod.id]!.labsDone
+                                  ? "border-emerald-500/30 text-emerald-500/90"
+                                  : "border-white/10 text-muted-foreground"
+                              }`}
+                            >
+                              {WORKSHOP_LABELS.labsDone}
+                              {workshopPills[mod.id]!.labsDone ? " ✓" : ""}
+                            </span>
+                            {workshopPills[mod.id]!.reviewDue > 0 && (
+                              <Link
+                                href="/learn/review"
+                                className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 border border-amber-500/30 text-amber-500/90 hover:bg-amber-500/10"
+                              >
+                                {WORKSHOP_LABELS.reviewBadge}: {workshopPills[mod.id]!.reviewDue}
+                              </Link>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div className="w-full shrink-0 md:w-48">{moduleCta(mod, track.id, locked, status)}</div>
                     </div>

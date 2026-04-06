@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 
+import { hasSteps } from "@/lib/module-steps";
+
 /** URL segment for each difficulty tier (Problems tabs + lesson routes). */
 export const TRACK_IDS = ["foundations", "intermediate", "pro"] as const;
 export type TrackId = (typeof TRACK_IDS)[number];
@@ -128,21 +130,84 @@ export const TRACKS: Record<TrackId, TrackDef> = {
   pro: {
     id: "pro",
     title: "Pro",
-    sub: "Enterprise governance and advanced automation",
+    sub: "Enterprise governance, advanced Git, and a full open-source style capstone",
     year: 3,
     level: "Pro",
     yearLabel: "Pro",
     defaultLessonSlug: "branch-mastery",
-    locked: true,
+    locked: false,
     modules: [
       {
         id: "PROG7313",
         lessonSlug: "branch-mastery",
         title: "Branch Mastery & Management",
-        status: "locked",
-        summary: "Governance, policies, and advanced automation at scale.",
-        bullets: ["Enterprise workflows", "Repo governance", "Advanced automation"],
+        status: "next",
+        summary: "Branch protection, CODEOWNERS, and release tagging for governed repos.",
+        bullets: ["Branch protection rules", "Governance & conventions", "Releases and stability"],
         iconName: "Cpu",
+      },
+      {
+        id: "PROG7314",
+        lessonSlug: "interactive-rebase",
+        title: "Interactive Rebase Mastery",
+        status: "next",
+        summary: "Rewrite local history safely: squash, reword, and reorder before review.",
+        bullets: ["git rebase -i", "Squash & fixup", "When to rebase vs merge"],
+        iconName: "Layers",
+      },
+      {
+        id: "PROG7315",
+        lessonSlug: "advanced-merge-strategies",
+        title: "Advanced Merge Strategies",
+        status: "next",
+        summary: "Merge options, rerere, and resolving messy integrations.",
+        bullets: ["Merge strategies & rerere", "Complex conflicts", "Team merge policy"],
+        iconName: "GitBranch",
+      },
+      {
+        id: "PROG7316",
+        lessonSlug: "git-hooks-automation",
+        title: "Git Hooks & Automation",
+        status: "next",
+        summary: "Automate quality gates with client-side hooks and CI alignment.",
+        bullets: ["pre-commit / pre-push", "Commit-msg conventions", "Hooks vs CI"],
+        iconName: "Cpu",
+      },
+      {
+        id: "PROG7317",
+        lessonSlug: "monorepo-submodules",
+        title: "Monorepos & Submodules",
+        status: "next",
+        summary: "Compose repositories: submodules, subtrees, and sparse checkouts.",
+        bullets: ["git submodule", "Subtree basics", "Scaling huge repos"],
+        iconName: "Layers",
+      },
+      {
+        id: "PROG7318",
+        lessonSlug: "security-history",
+        title: "Security & History Rewriting",
+        status: "next",
+        summary: "Remove leaked secrets, sign commits, and prevent repeats.",
+        bullets: ["filter-repo mindset", "Signed commits", "Secrets hygiene"],
+        iconName: "GitBranch",
+      },
+      {
+        id: "PROG7319",
+        lessonSlug: "git-internals",
+        title: "Git Internals & Troubleshooting",
+        status: "next",
+        summary: "Objects, packfiles, fsck, and debugging real repositories.",
+        bullets: ["Objects & cat-file", "fsck & integrity", "blame & pickaxe"],
+        iconName: "Cpu",
+      },
+      {
+        id: "PROG7320",
+        lessonSlug: "full-project-capstone",
+        title: "Full Project: Fork to Push",
+        status: "next",
+        summary: "End-to-end: branch, remotes, fetch, merge conflicts mindset, PR-ready push.",
+        bullets: ["Combines Foundations + Intermediate + Pro flows", "Realistic OSS fork", "Checklist-driven"],
+        iconName: "GitBranch",
       },
     ],
   },
@@ -156,6 +221,14 @@ export function getTrack(track: string): TrackDef | null {
 export function lessonPath(track: TrackId, lessonSlug: string): string {
   return `/modules/${track}/${lessonSlug}`;
 }
+
+/** Workshop “Check understanding” quiz for a lesson. */
+export function lessonQuizPath(track: TrackId, lessonSlug: string): string {
+  return `/modules/${track}/${lessonSlug}/quiz`;
+}
+
+export const LEARN_REVIEW_PATH = "/learn/review";
+export const LEARN_IMPROVE_PATH = "/learn/improve";
 
 export function trackPath(track: TrackId): string {
   return `/modules/${track}`;
@@ -218,8 +291,13 @@ export function getNextHrefAfterChallengesInModule(
   challengeSlug: string,
   orderedSlugs: string[],
 ): string {
+  const moduleDef = getModuleByLesson(trackId, lessonSlug);
+  const moduleId = moduleDef?.id;
   const idx = orderedSlugs.indexOf(challengeSlug);
   if (idx !== -1 && idx + 1 < orderedSlugs.length) {
+    if (moduleId && hasSteps(moduleId)) {
+      return stepPath(trackId, lessonSlug, 1);
+    }
     return challengePath(trackId, lessonSlug, orderedSlugs[idx + 1]!);
   }
   return lessonPath(trackId, lessonSlug);

@@ -4,7 +4,10 @@ import { GitBranch, Radio, Terminal, History, GitCommit } from "lucide-react";
 
 import { CommitGraph } from "@/components/CommitGraph";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getChallengeStatusScenario } from "@/lib/challenge-git-status-meta";
+import {
+  getChallengeStatusScenario,
+  type ChallengeStatusScenario,
+} from "@/lib/challenge-git-status-meta";
 import {
   formatGitStatus,
   statusBarModifiedCount,
@@ -125,11 +128,19 @@ function FetchActivity({ state }: { state: GitSimState }) {
 export function ChallengeGitStatusPanel({
   challenge,
   gitState,
+  scenarioOverride,
 }: {
-  challenge: ChallengeDef;
+  challenge?: ChallengeDef;
   gitState: GitSimState;
+  /** When set (e.g. repo sandbox), skip challenge-based copy. */
+  scenarioOverride?: ChallengeStatusScenario;
 }) {
-  const scenario = getChallengeStatusScenario(challenge);
+  const scenario =
+    scenarioOverride ??
+    (challenge ? getChallengeStatusScenario(challenge) : null);
+  if (!scenario) {
+    return null;
+  }
   const staged = statusBarStagedCount(gitState);
   const modified = statusBarModifiedCount(gitState);
   const showRemotes = scenario.emphasizeRemotes || Boolean(gitState.remotes && Object.keys(gitState.remotes).length > 0);

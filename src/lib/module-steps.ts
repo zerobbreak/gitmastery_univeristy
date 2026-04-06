@@ -583,6 +583,184 @@ Balance velocity on main with predictable release cadence and rollback plans.`,
       tip: "Document who can create tags and how release notes are generated - reduces Friday-night surprises.",
     },
   ],
+
+  [key("PROG7314")]: [
+    {
+      stepNumber: 1,
+      title: "Why interactive rebase",
+      body: `**Interactive rebase** edits recent commit history: squash WIP commits, reword messages, or drop mistakes before code review.
+
+In this app, \`git rebase -i HEAD~N\` performs a **squash** of the last N commits into one — enough to practice the workflow safely.`,
+      terminal: ["git log --oneline -6"],
+      tip: "Only rewrite branches you own and that are not yet merged to shared main.",
+    },
+    {
+      stepNumber: 2,
+      title: "Squash the noise",
+      body: `Run \`git rebase -i HEAD~3\` when you have at least three commits to fold. The simulator produces a single squashed commit with a fresh message.
+
+Afterwards, \`git log --oneline\` should show a shorter, clearer history.`,
+      terminal: ["git rebase -i HEAD~3", "git log --oneline -3"],
+      tip: "In real Git, an editor opens a todo list; here the squash is automatic for the drill.",
+    },
+    {
+      stepNumber: 3,
+      title: "Rebase vs merge",
+      body: `**Rebase** replays commits on top of another tip for a linear story. **Merge** preserves a forked history with a merge commit.
+
+Teams often rebase feature branches before merge; default branch policies may still use merge commits for the final integration.`,
+      terminal: ["git status"],
+      tip: "Ask your team: rebase-only, merge-only, or squash-merge on the server?",
+    },
+  ],
+
+  [key("PROG7315")]: [
+    {
+      stepNumber: 1,
+      title: "Enable rerere",
+      body: `**Rerere** (reuse recorded resolution) stores how you resolved conflicts so Git can replay that resolution when the same conflict appears again.
+
+Enable it once per machine: \`git config rerere.enabled true\`.`,
+      terminal: ["git config rerere.enabled true"],
+      tip: "Especially useful on long-lived branches that merge main often.",
+    },
+    {
+      stepNumber: 2,
+      title: "Merge another line of work",
+      body: `When a feature branch diverged, merge it into your current branch: \`git merge feature-x\`.
+
+The simulator fast-forwards or creates a merge commit depending on history shape.`,
+      terminal: ["git merge feature-x"],
+      tip: "If conflicts appear, resolve once — rerere remembers for next time.",
+    },
+  ],
+
+  [key("PROG7316")]: [
+    {
+      stepNumber: 1,
+      title: "What hooks do",
+      body: `**Hooks** are scripts Git runs on events: commit, push, rebase. They catch style and test failures before CI.
+
+This simulator exposes \`git hook install pre-commit\` as a stand-in for copying a real script into \`.git/hooks/\`.`,
+      terminal: ["git hook install pre-commit"],
+      tip: "Keep hooks fast — developers skip slow hooks.",
+    },
+    {
+      stepNumber: 2,
+      title: "Hooks and CI",
+      body: `Hooks are **local** and can be bypassed. **CI** is authoritative. Use both: hooks for quick feedback, CI for guarantees.`,
+      terminal: ["git status"],
+      tip: "Tools like Husky help teams share hook setup in Node projects.",
+    },
+  ],
+
+  [key("PROG7317")]: [
+    {
+      stepNumber: 1,
+      title: "Submodule basics",
+      body: `A **submodule** embeds another repository at a subdirectory, pinned to a commit.
+
+Add: \`git submodule add <url> <path>\`. Clone consumers run \`git submodule update --init --recursive\`.`,
+      terminal: [
+        "git submodule add https://github.com/example/lib.git vendor/lib",
+      ],
+      tip: "Submodules are explicit dependencies — great for shared libraries, not for tiny snippets.",
+    },
+    {
+      stepNumber: 2,
+      title: "Alternatives",
+      body: `**Subtree** merges external history into one repo without submodule pointers. **Monorepo** tools (Nx, Turborepo) coordinate many packages in one clone.
+
+Choose based on release cadence and who owns the dependency.`,
+      terminal: ["git submodule status"],
+      tip: "Sparse checkout helps huge monorepos by checking out only some paths.",
+    },
+  ],
+
+  [key("PROG7318")]: [
+    {
+      stepNumber: 1,
+      title: "Secrets in Git",
+      body: `If credentials are committed, assume they are compromised: **rotate** them first, then remove them from history.
+
+The simulator models \`git filter-repo --force\` as a rewrite step — real installs use the filter-repo tool or BFG.`,
+      terminal: ["git filter-repo --force"],
+      tip: "Pre-commit secret scanners reduce recurrence.",
+    },
+    {
+      stepNumber: 2,
+      title: "Signed commits",
+      body: `**GPG-signed commits** prove authorship on hosts that show “Verified”. Configure signing once per machine.
+
+Combine with branch protection requiring signed commits for high-risk repos.`,
+      terminal: ["git config --global user.signingkey"],
+      tip: "Signing tags is common for release artifacts.",
+    },
+  ],
+
+  [key("PROG7319")]: [
+    {
+      stepNumber: 1,
+      title: "Object model",
+      body: `Commits point to **trees**; trees reference **blobs** (file contents). \`git cat-file -p HEAD\` dumps the commit object.
+
+You can also use \`git cat-file -t\` to print the type (commit, tree, blob).`,
+      terminal: ["git cat-file -t HEAD", "git cat-file -p HEAD"],
+      tip: "Shallow clones skip some objects — cat-file may not see everything offline.",
+    },
+    {
+      stepNumber: 2,
+      title: "fsck and health",
+      body: `**git fsck** checks object connectivity and reports dangling objects. Use it when a repo behaves strangely after crashes or manual edits.
+
+**git gc** packs objects and prunes stale data — usually automatic.`,
+      terminal: ["git fsck"],
+      tip: "Corruption is rare; fsck is the first diagnostic step.",
+    },
+  ],
+
+  [key("PROG7320")]: [
+    {
+      stepNumber: 1,
+      title: "Fork and clone mindset",
+      body: `You work from a **fork** (\`origin\`) and track the **upstream** canonical repo. That split is how most OSS contributions flow.
+
+Create a dedicated **feature branch** so \`main\` stays stable.`,
+      terminal: ["git switch -c feature/oss-contribution"],
+      tip: "Never commit directly to protected main in shared repos.",
+    },
+    {
+      stepNumber: 2,
+      title: "Wire upstream",
+      body: `Add \`upstream\` with \`git remote add upstream <url>\`, then \`git fetch upstream\` to download new commits without merging yet.
+
+Verify \`git remote -v\` shows both origin and upstream.`,
+      terminal: ["git remote add upstream https://github.com/original/project.git", "git fetch upstream"],
+      tip: "HTTPS vs SSH URLs must match how you authenticate.",
+    },
+    {
+      stepNumber: 3,
+      title: "Integrate and record",
+      body: `Stage your edits (\`git add\`), commit with a message that reviewers will understand, then \`git push -u origin <branch>\` so the remote tracks your work for a PR.
+
+Resolve conflicts when merging or rebasing onto updated main — same skills as the Intermediate track.`,
+      terminal: [
+        "git add CONTRIBUTING.md",
+        'git commit -m "Add contribution"',
+        "git push -u origin feature/oss-contribution",
+      ],
+      tip: "Open the PR only after tests pass locally or CI is green.",
+    },
+    {
+      stepNumber: 4,
+      title: "What you combined",
+      body: `This flow used: **branches** (Foundations), **remotes & fetch** (Foundations + Intermediate), **merge conflicts** mindset (Intermediate), **PR discipline** (Intermediate), and **Pro** topics like tagging and hooks where your team applies them.
+
+You are ready to contribute confidently to real projects.`,
+      terminal: ["git log --oneline -5"],
+      tip: "Keep a personal checklist: branch → sync → test → push → PR.",
+    },
+  ],
 };
 
 export function getStepsForModule(moduleId: string): LessonStep[] | null {

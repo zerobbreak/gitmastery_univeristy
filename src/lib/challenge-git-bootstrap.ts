@@ -9,6 +9,9 @@ export function getGitBootstrapForChallenge(
   fileContents?: NonNullable<GitSimState["fileContents"]>;
   conflictFiles?: NonNullable<GitSimState["conflictFiles"]>;
   modifiedPaths?: string[];
+  recoverLostCommitScenario?: boolean;
+  interactiveRebaseDrill?: boolean;
+  rerereMergeLab?: boolean;
 } {
   switch (challenge.id) {
     case "CHAL102":
@@ -20,8 +23,45 @@ export function getGitBootstrapForChallenge(
           },
         },
       };
+    /** PR workflow expects `git push -u origin <branch>` like a clone with GitHub as origin. */
+    case "CHAL201":
+      return {
+        remotes: {
+          origin: {
+            fetch: "https://github.com/you/project.git",
+            push: "https://github.com/you/project.git",
+          },
+        },
+      };
+    case "CHAL202":
+      return { recoverLostCommitScenario: true };
     case "CHAL304":
       return getMergeConflictBootstrap();
+    case "CHAL401":
+      return { interactiveRebaseDrill: true };
+    case "CHAL402":
+      return { rerereMergeLab: true };
+    case "CHAL405":
+      return {
+        fileContents: {
+          "README.md":
+            "# Project\n\nAPI_KEY=sk_live_bad_do_not_commit\n\nDocs here.\n",
+        },
+        modifiedPaths: ["README.md"],
+      };
+    case "CHAL407":
+      return {
+        remotes: {
+          origin: {
+            fetch: "https://github.com/you/oss-fork.git",
+            push: "https://github.com/you/oss-fork.git",
+          },
+        },
+        fileContents: {
+          "CONTRIBUTING.md": "# Contributing\n\nAdd your notes below.\n",
+        },
+        modifiedPaths: ["CONTRIBUTING.md"],
+      };
     default:
       return {};
   }

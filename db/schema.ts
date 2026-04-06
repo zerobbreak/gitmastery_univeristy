@@ -1,5 +1,8 @@
+import { sql } from "drizzle-orm";
 import {
+  check,
   date,
+  index,
   integer,
   pgTable,
   primaryKey,
@@ -40,6 +43,22 @@ export const challenges = pgTable(
     objectivesJson: text("objectives_json").notNull(),
   },
   (t) => [uniqueIndex("challenges_module_slug").on(t.moduleId, t.slug)],
+);
+
+/**
+ * Single row (id = 1) bumped when leaderboard-relevant profile fields change.
+ * Supabase Realtime subscribes to UPDATE on this table so clients can refetch
+ * without exposing full `user_profiles` rows over the websocket.
+ */
+export const leaderboardRealtimeSignals = pgTable(
+  "leaderboard_realtime_signals",
+  {
+    id: integer("id").primaryKey(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [check("leaderboard_signal_singleton", sql`${t.id} = 1`)],
 );
 
 /** App profile keyed by Clerk user id (synced on first API touch). */
@@ -129,4 +148,28 @@ export const userActivityDays = pgTable(
     intensity: smallint("intensity").notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.userProfileId, t.day] })],
+);
+
+/** Per-user concept scores + spaced review schedule (workshop quizzes). */
+export const userConceptMastery = pgTable(
+  "user_concept_mastery",
+  {
+    userProfileId: integer("user_profile_id")
+      .notNull()
+      .references(() => userProfiles.id, { onDelete: "cascade" }),
+    conceptId: text("concept_id").notNull(),
+    moduleId: text("module_id")
+      .notNull()
+      .references(() => modules.id, { onDelete: "cascade" }),
+    bestScorePercent: smallint("best_score_percent").notNull().default(0),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+    lastAttemptScore: smallint("last_attempt_score"),
+    reviewDueAt: timestamp("review_due_at", { withTimezone: true }),
+    /** Increments after each successful review session for this concept. */
+    reviewLevel: smallint("review_level").notNull().default(0),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userProfileId, t.conceptId] }),
+    index("ucm_user_review_due").on(t.userProfileId, t.reviewDueAt),
+  ],
 );

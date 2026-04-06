@@ -1,13 +1,22 @@
 "use client";
 
 import { UserButton } from "@clerk/nextjs";
-import { GitBranch, LayoutDashboard, BookOpen, Trophy } from "lucide-react";
+import {
+  GitBranch,
+  LayoutDashboard,
+  BookOpen,
+  Trophy,
+  GraduationCap,
+  Database,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/modules", label: "Problems", icon: BookOpen },
+  { href: "/workshops", label: "Workshops", icon: GraduationCap },
+  { href: "/repos", label: "Repositories", icon: Database },
   { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ] as const;
 

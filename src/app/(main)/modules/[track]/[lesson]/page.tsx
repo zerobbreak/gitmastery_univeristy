@@ -6,6 +6,7 @@ import { ModuleLessonView } from "@/components/ModuleLessonView";
 import { recomputeModuleProgressFromCompletions } from "@/lib/challenge-progression";
 import { listChallengesForModule } from "@/lib/challenges-db";
 import { assertLesson, type ModuleStatus } from "@/lib/module-routes";
+import { getLessonWorkshopExtras } from "@/lib/workshop-mastery";
 import { getDb, schema } from "../../../../../../db/index";
 
 const { userChallengeCompletions, userModuleProgress, userProfiles } = schema;
@@ -24,6 +25,7 @@ export default async function ModuleLessonPage({
   const { userId } = await auth();
   let completedChallengeIds: string[] = [];
   let liveModuleStatus: ModuleStatus | null = null;
+  let profileId: number | null = null;
 
   if (userId) {
     const [profile] = await db
@@ -32,6 +34,7 @@ export default async function ModuleLessonPage({
       .where(eq(userProfiles.clerkUserId, userId))
       .limit(1);
     if (profile) {
+      profileId = profile.id;
       await recomputeModuleProgressFromCompletions(db, profile.id);
       const rows = await db
         .select({ challengeId: userChallengeCompletions.challengeId })
@@ -58,6 +61,16 @@ export default async function ModuleLessonPage({
     }
   }
 
+  const workshopExtras = await getLessonWorkshopExtras(
+    db,
+    profileId,
+    moduleDef.id,
+    trackId,
+    moduleDef.lessonSlug,
+    completedChallengeIds,
+    liveModuleStatus,
+  );
+
   return (
     <ModuleShell>
       <ModuleLessonView
@@ -66,6 +79,7 @@ export default async function ModuleLessonPage({
         challenges={challengesList}
         completedChallengeIds={completedChallengeIds}
         liveModuleStatus={liveModuleStatus}
+        workshopExtras={workshopExtras}
       />
     </ModuleShell>
   );

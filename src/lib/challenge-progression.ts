@@ -3,6 +3,16 @@ import { and, asc, eq } from "drizzle-orm";
 import { getDb, schema } from "../../db/index";
 import { ensureModuleProgressForUser } from "@/lib/dashboard-data";
 import { TRACK_IDS, TRACKS, type TrackId } from "@/lib/module-routes";
+import { scheduleSpacedReviewForModule } from "@/lib/workshop-mastery";
+
+/** Pro track is playable only after every Intermediate module is complete. */
+function isIntermediateTrackComplete(
+  completeByModuleId: Map<string, boolean>,
+): boolean {
+  return TRACKS.intermediate.modules.every(
+    (m) => completeByModuleId.get(m.id) === true,
+  );
+}
 
 const {
   challenges,
@@ -63,6 +73,49 @@ export async function bumpActivityDayForProfile(
 }
 
 /**
+ * Extend streak when the learner completes activity on a new UTC day (first completion of that day).
+ */
+export async function updateStreakOnActivity(
+  db: ReturnType<typeof getDb>,
+  profileId: number,
+): Promise<void> {
+  const today = todayUtcDay();
+  const [existing] = await db
+    .select()
+    .from(userProfiles)
+    .where(eq(userProfiles.id, profileId))
+    .limit(1);
+  if (!existing) return;
+
+  if (existing.lastActiveDate === today) {
+    return;
+  }
+
+  let newStreak = 1;
+  if (existing.lastActiveDate) {
+    const prevMs = new Date(`${existing.lastActiveDate}T12:00:00.000Z`).getTime();
+    const todayMs = new Date(`${today}T12:00:00.000Z`).getTime();
+    const diffDays = Math.round((todayMs - prevMs) / 86_400_000);
+    if (diffDays === 1) {
+      newStreak = existing.streakDays + 1;
+    } else if (diffDays > 1) {
+      newStreak = 1;
+    } else {
+      return;
+    }
+  }
+
+  await db
+    .update(userProfiles)
+    .set({
+      streakDays: newStreak,
+      lastActiveDate: today,
+      updatedAt: new Date(),
+    })
+    .where(eq(userProfiles.id, profileId));
+}
+
+/**
  * Recompute every module row from challenge completions + catalog order.
  * No-challenge modules are treated as complete (100%) so they never block progression.
  */
@@ -109,9 +162,9 @@ export async function recomputeModuleProgressFromCompletions(
   for (const cat of catalog) {
     const mid = cat.id;
     const tid = getTrackIdForModuleId(mid);
-    const trackLocked = !tid || TRACKS[tid].locked;
+    const staticTrackLocked = Boolean(tid && TRACKS[tid].locked);
 
-    if (trackLocked) {
+    if (!tid || staticTrackLocked) {
       slots.push({
         moduleId: mid,
         trackLocked: true,
@@ -140,6 +193,19 @@ export async function recomputeModuleProgressFromCompletions(
       complete,
       progressPercent,
     });
+  }
+
+  const completeByModuleId = new Map<string, boolean>();
+  for (const s of slots) {
+    if (s.complete) completeByModuleId.set(s.moduleId, true);
+  }
+  const intermediateDone = isIntermediateTrackComplete(completeByModuleId);
+
+  for (const s of slots) {
+    const tid = getTrackIdForModuleId(s.moduleId);
+    if (tid === "pro" && !intermediateDone) {
+      s.trackLocked = true;
+    }
   }
 
   const unlockedIncompleteIndices: number[] = [];
@@ -191,5 +257,11 @@ export async function recomputeModuleProgressFromCompletions(
       updatedAt: now,
     })
     .where(eq(userProfiles.id, profileId));
+
+  for (const s of slots) {
+    if (s.complete && !s.trackLocked) {
+      await scheduleSpacedReviewForModule(db, profileId, s.moduleId);
+    }
+  }
 }
 

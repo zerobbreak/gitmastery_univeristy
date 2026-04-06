@@ -10,6 +10,7 @@ import {
 import {
   bumpActivityDayForProfile,
   recomputeModuleProgressFromCompletions,
+  updateStreakOnActivity,
 } from "@/lib/challenge-progression";
 import { corsHeaders } from "@/lib/cors";
 import { masteryLevelFromXp } from "@/lib/dashboard-data";
@@ -202,6 +203,7 @@ export async function POST(req: NextRequest) {
 
     await recomputeModuleProgressFromCompletions(db, profile.id);
     await bumpActivityDayForProfile(db, profile.id);
+    await updateStreakOnActivity(db, profile.id);
   } catch (e) {
     console.error("challenge submit:", e);
     return NextResponse.json(

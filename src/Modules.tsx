@@ -156,15 +156,17 @@ export default function Modules() {
   }, [data]);
 
   const trackStats = useMemo(() => {
+    const proUnlocked = data?.trackAccess?.pro ?? false;
     return TRACK_IDS.map((id) => {
       const t = TRACKS[id];
       const total = t.modules.length;
       const completed = t.modules.filter(
         (m) => progressMap.get(m.id)?.status === "completed",
       ).length;
-      return { id, title: t.title, year: t.year, level: t.level, locked: t.locked, total, completed };
+      const locked = id === "pro" ? !proUnlocked : t.locked;
+      return { id, title: t.title, year: t.year, level: t.level, locked, total, completed };
     });
-  }, [progressMap]);
+  }, [progressMap, data?.trackAccess?.pro]);
 
   const currentTrack = TRACKS[activeTrackTab];
 

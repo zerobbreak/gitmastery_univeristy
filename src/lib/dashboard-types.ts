@@ -5,6 +5,36 @@ export type LearningPathModuleStatus =
   | "next"
   | "completed";
 
+/** Workshop / spaced review / improve (from GET /api/dashboard). */
+export type ImproveItem = {
+  conceptId: string;
+  moduleId: string;
+  conceptTitle: string;
+  href: string;
+};
+
+/** Per-module workshop pills (track + lesson UIs). */
+export type ModuleWorkshopPill = {
+  quizDone: boolean;
+  labsDone: boolean;
+  reviewDue: number;
+};
+
+/** Lesson page workshop panel (from server). */
+export type LessonWorkshopExtras = {
+  quizHref: string;
+  reviewDueCount: number;
+  improveHref: string;
+  labChallengeIds: readonly string[];
+  pills: ModuleWorkshopPill;
+};
+
+export type LearningModesPayload = {
+  reviewDueCount: number;
+  improveCount: number;
+  improveItems: ImproveItem[];
+};
+
 /** Response shape for GET /api/dashboard (client-safe). */
 export type DashboardPayload = {
   user: {
@@ -56,4 +86,9 @@ export type DashboardPayload = {
   heatmap: number[];
   coachHint: string;
   activityYearLabel: string;
+  /** Pro track is listed but lessons stay locked in progression until Intermediate is fully complete. */
+  trackAccess: {
+    pro: boolean;
+  };
+  learningModes: LearningModesPayload;
 };

@@ -208,6 +208,137 @@ const registry: Record<string, LessonContent> = {
       "git push origin v1.2.0",
     ],
   },
+  [key("pro", "interactive-rebase")]: {
+    eyebrow: "PROG7314 · Interactive Rebase",
+    title: "Rewrite history before review",
+    intro:
+      "Interactive rebase lets you squash noisy commits, fix messages, and reorder work so reviewers see a clear story.",
+    sections: [
+      {
+        heading: "git rebase -i",
+        body:
+          "Pick, squash, reword, and drop commits in a todo list. The simulator supports a squash of the last N commits with `git rebase -i HEAD~N`.",
+      },
+      {
+        heading: "When to use it",
+        body:
+          "Use on branches that are not yet merged and not shared widely. Never rewrite published main without team agreement.",
+      },
+    ],
+    terminal: [
+      "git log --oneline -5",
+      "git rebase -i HEAD~3",
+    ],
+  },
+  [key("pro", "advanced-merge-strategies")]: {
+    eyebrow: "PROG7315 · Advanced merge",
+    title: "Merges at scale",
+    intro:
+      "Beyond fast-forward: enable rerere so repeated conflict resolutions are remembered, and align merge policy with your team.",
+    sections: [
+      {
+        heading: "Rerere",
+        body:
+          "`git config rerere.enabled true` records how you resolved conflicts so the next similar merge is easier.",
+      },
+    ],
+    terminal: [
+      "git config rerere.enabled true",
+      "git merge feature-x",
+    ],
+  },
+  [key("pro", "git-hooks-automation")]: {
+    eyebrow: "PROG7316 · Hooks",
+    title: "Automate before CI",
+    intro:
+      "Hooks run locally before code leaves your machine. Pair them with CI for defense in depth.",
+    sections: [
+      {
+        heading: "Client hooks",
+        body:
+          "pre-commit and pre-push are common. The simulator exposes `git hook install pre-commit` as a stand-in for wiring a real script.",
+      },
+    ],
+    terminal: ["git hook install pre-commit"],
+  },
+  [key("pro", "monorepo-submodules")]: {
+    eyebrow: "PROG7317 · Submodules",
+    title: "Compose repositories",
+    intro:
+      "Submodules pin external repos at a path. Clone with `git submodule update --init` in real projects.",
+    sections: [
+      {
+        heading: "git submodule add",
+        body:
+          "Records the remote URL and commit in `.gitmodules`. Update deliberately and commit the pointer change.",
+      },
+    ],
+    terminal: [
+      "git submodule add https://github.com/example/lib.git vendor/lib",
+    ],
+  },
+  [key("pro", "security-history")]: {
+    eyebrow: "PROG7318 · Security",
+    title: "Secrets and history",
+    intro:
+      "Committed secrets require history rewriting and key rotation. The simulator models `git filter-repo --force` as a rewrite step.",
+    sections: [
+      {
+        heading: "Remediation",
+        body:
+          "Rotate the leaked credential, then rewrite history on branches that contained it. Coordinate with collaborators.",
+      },
+    ],
+    terminal: ["git filter-repo --force"],
+  },
+  [key("pro", "git-internals")]: {
+    eyebrow: "PROG7319 · Internals",
+    title: "Objects and plumbing",
+    intro:
+      "Understanding blobs, trees, and commits helps when `git status` is not enough.",
+    sections: [
+      {
+        heading: "Inspection",
+        body:
+          "`git cat-file` inspects objects; `git fsck` checks connectivity. Use them when debugging odd repository states.",
+      },
+    ],
+    terminal: [
+      "git cat-file -t HEAD",
+      "git cat-file -p HEAD",
+      "git fsck",
+      "git tag -a v1.0.0 -m \"GA\"",
+    ],
+  },
+  [key("pro", "full-project-capstone")]: {
+    eyebrow: "PROG7320 · Capstone",
+    title: "Fork to push — full stack",
+    intro:
+      "You are on a fork with local edits. Branch, connect upstream, sync, commit, and push — the same rhythm as real open-source work.",
+    sections: [
+      {
+        heading: "Flow",
+        body:
+          "Combines branching, remotes, fetch, staging, commits, and push from earlier tracks in one scenario.",
+      },
+    ],
+    terminal: [
+      "git switch -c feature/oss-contribution",
+      "git remote add upstream https://github.com/original/project.git",
+      "git fetch upstream",
+      "git add CONTRIBUTING.md",
+      'git commit -m "Add contribution"',
+      "git push -u origin feature/oss-contribution",
+    ],
+    files: [
+      {
+        name: "CONTRIBUTING.md",
+        content: "# Contributing\n\nYour notes.\n",
+        active: true,
+      },
+      { name: "README.md", content: "# OSS fork\n", active: false },
+    ],
+  },
 };
 
 export function getLessonContent(track: string, lessonSlug: string): LessonContent | null {

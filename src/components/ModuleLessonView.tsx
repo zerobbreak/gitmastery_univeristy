@@ -1,6 +1,16 @@
 "use client";
 
-import { BookOpen, CheckCircle2, ChevronDown, ChevronRight, Circle, Lock } from "lucide-react";
+import {
+  BookOpen,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Circle,
+  FlaskConical,
+  GraduationCap,
+  Lock,
+  RotateCcw,
+} from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -18,6 +28,8 @@ import {
   type TrackId,
   type TrackModuleDef,
 } from "@/lib/module-routes";
+import type { LessonWorkshopExtras } from "@/lib/dashboard-types";
+import { WORKSHOP_LABELS } from "@/lib/workshop-copy";
 import { getStepsForModule, hasSteps } from "@/lib/module-steps";
 
 function DifficultyBadge({ level }: { level: string }) {
@@ -36,12 +48,14 @@ export function ModuleLessonView({
   challenges,
   completedChallengeIds,
   liveModuleStatus,
+  workshopExtras,
 }: {
   trackId: TrackId;
   moduleDef: TrackModuleDef;
   challenges: ChallengeDef[];
   completedChallengeIds: string[];
   liveModuleStatus?: ModuleStatus | null;
+  workshopExtras?: LessonWorkshopExtras | null;
 }) {
   const content = getLessonContent(trackId, moduleDef.lessonSlug);
   const steps = getStepsForModule(moduleDef.id);
@@ -105,6 +119,95 @@ export function ModuleLessonView({
       {/* Scrollable Content */}
       <ScrollArea className="flex-1 min-h-0">
         <div className="mx-auto w-full max-w-3xl space-y-8 pb-8">
+          {workshopExtras && (
+            <div className="space-y-4">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Workshop
+              </h2>
+              <div className="lc-panel divide-y divide-border/20">
+                <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <GraduationCap size={16} className="text-primary shrink-0" />
+                      {WORKSHOP_LABELS.checkUnderstanding}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      {WORKSHOP_LABELS.checkUnderstandingHint}
+                    </p>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <span
+                        className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 border ${
+                          workshopExtras.pills.quizDone
+                            ? "border-emerald-500/30 text-emerald-600"
+                            : "border-border/40 text-muted-foreground"
+                        }`}
+                      >
+                        {WORKSHOP_LABELS.quizDone}
+                        {workshopExtras.pills.quizDone ? " ✓" : ""}
+                      </span>
+                    </div>
+                  </div>
+                  <Button asChild size="sm" className="rounded-none shrink-0">
+                    <Link href={workshopExtras.quizHref}>
+                      {workshopExtras.pills.quizDone ? WORKSHOP_LABELS.retakeQuiz : WORKSHOP_LABELS.takeQuiz}
+                    </Link>
+                  </Button>
+                </div>
+                {workshopExtras.labChallengeIds.length > 0 && (
+                  <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <FlaskConical size={16} className="text-primary shrink-0" />
+                        {WORKSHOP_LABELS.practiceLabs}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        {WORKSHOP_LABELS.practiceLabsHint}
+                      </p>
+                    </div>
+                    <span
+                      className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 border self-start ${
+                        workshopExtras.pills.labsDone
+                          ? "border-emerald-500/30 text-emerald-600"
+                          : "border-border/40 text-muted-foreground"
+                      }`}
+                    >
+                      {WORKSHOP_LABELS.labsDone}
+                      {workshopExtras.pills.labsDone ? " ✓" : ""}
+                    </span>
+                  </div>
+                )}
+                {displayStatus === "completed" && workshopExtras.reviewDueCount > 0 && (
+                  <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <RotateCcw size={16} className="text-amber-500 shrink-0" />
+                        {WORKSHOP_LABELS.spacedReview}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">{WORKSHOP_LABELS.spacedReviewHint}</p>
+                    </div>
+                    <Button asChild size="sm" variant="outline" className="rounded-none border-amber-500/30 text-amber-600 shrink-0">
+                      <Link href="/learn/review">
+                        {WORKSHOP_LABELS.reviewDue}: {workshopExtras.reviewDueCount}
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+                <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <GraduationCap size={16} className="text-primary shrink-0" />
+                      {WORKSHOP_LABELS.improveQueue}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">{WORKSHOP_LABELS.improveQueueHint}</p>
+                  </div>
+                  <Button asChild size="sm" variant="secondary" className="rounded-none shrink-0">
+                    <Link href={workshopExtras.improveHref}>{WORKSHOP_LABELS.startImprove}</Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Steps */}
           {moduleHasSteps && steps && (
             <div className="space-y-4">
@@ -156,10 +259,12 @@ export function ModuleLessonView({
                   const unlocked = prevDone || thisDone;
                   const locked = !unlocked;
 
-                  /** Teach steps first when the module has a learning path; otherwise open the challenge. */
-                  const challengeHref = moduleHasSteps
-                    ? stepPath(trackId, moduleDef.lessonSlug, 1)
-                    : challengePath(trackId, moduleDef.lessonSlug, challenge.slug);
+                  /** Challenge rows open the simulator for that challenge; the Learning Path above is for concepts first. */
+                  const challengeHref = challengePath(
+                    trackId,
+                    moduleDef.lessonSlug,
+                    challenge.slug,
+                  );
 
                   const listHint = getChallengeListHint(challenge);
                   const row = (
@@ -179,6 +284,11 @@ export function ModuleLessonView({
                           {listHint}
                         </p>
                         <div className="flex flex-wrap items-center gap-3 mt-2">
+                          {workshopExtras?.labChallengeIds.includes(challenge.id) && (
+                            <span className="text-[9px] font-bold uppercase tracking-widest text-primary border border-primary/30 px-1.5 py-0">
+                              Lab
+                            </span>
+                          )}
                           <DifficultyBadge level={challenge.difficulty} />
                           <span className="text-[11px] font-mono tabular-nums text-muted-foreground">{challenge.xp} XP</span>
                           {thisDone && <span className="text-[10px] font-semibold text-easy uppercase tracking-wider">Solved</span>}

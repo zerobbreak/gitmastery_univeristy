@@ -1,5 +1,8 @@
 import type { GitSimState } from "@/lib/git-emulator";
-import { hasConflictMarkers } from "@/lib/git-emulator";
+import {
+  hasConflictMarkers,
+  RECOVER_LOST_COMMIT_MESSAGE,
+} from "@/lib/git-emulator";
 import type { ChallengeDef } from "@/lib/module-routes";
 import type { LessonContent } from "@/lib/module-lesson-content";
 
@@ -55,6 +58,23 @@ function conflictFileContent(state: GitSimState, filename: string): string | und
   return state.workingTree?.[filename] ?? state.fileContents?.[filename];
 }
 
+function headAtLostCommit(state: GitSimState): boolean {
+  const headSha = state.detachedHead
+    ? state.HEAD
+    : state.refs[state.HEAD] ?? null;
+  const c = headSha ? state.commits[headSha] : null;
+  return c?.message === RECOVER_LOST_COMMIT_MESSAGE;
+}
+
+function recoveryBranchAtLostCommit(state: GitSimState): boolean {
+  for (const [branchName, refSha] of Object.entries(state.refs ?? {})) {
+    if (!/recovery|recover/i.test(branchName)) continue;
+    const c = state.commits[refSha];
+    if (c?.message === RECOVER_LOST_COMMIT_MESSAGE) return true;
+  }
+  return false;
+}
+
 export function objectiveDone(
   text: string,
   state: GitSimState,
@@ -63,10 +83,36 @@ export function objectiveDone(
   // Use HEAD for branch name (new state) with fallback to branch (legacy)
   const currentBranch = state.HEAD ?? state.branch;
 
-  // Before generic "must equal parsed name" — recovery allows any branch whose name contains recovery/recover
   if (/recovery branch/i.test(text) || /create.*branch.*from.*commit/i.test(text)) {
-    const branches = Object.keys(state.refs ?? {});
-    return branches.some((b) => b.includes("recovery") || b.includes("recover"));
+    return recoveryBranchAtLostCommit(state);
+  }
+
+  if (/interactive rebase/i.test(text) || /squash last three commits/i.test(text)) {
+    return Boolean(state.interactiveRebaseSquashed);
+  }
+  if (/rerere/i.test(text) && /enable/i.test(text)) {
+    return state.gitConfig?.["rerere.enabled"] === "true";
+  }
+  if (/merge branch feature-x/i.test(text)) {
+    return state.lastMergeSource === "feature-x";
+  }
+  if (/pre-commit/i.test(text) && (/install/i.test(text) || /git hook/i.test(text))) {
+    return state.hooksInstalled?.includes("pre-commit") ?? false;
+  }
+  if (/submodule/i.test(text) && /vendor\/lib/i.test(text)) {
+    return Boolean(state.submodules?.["vendor/lib"]);
+  }
+  if (/filter-repo/i.test(text)) {
+    return Boolean(state.filterRepoRan);
+  }
+  if (/cat-file/i.test(text)) {
+    return (state.catFileInspectCount ?? 0) >= 1;
+  }
+  if (/\bfsck\b/i.test(text)) {
+    return Boolean(state.fsckCompleted);
+  }
+  if (/annotated tag/i.test(text) && /v1\.0\.0/i.test(text)) {
+    return Boolean(state.annotatedTags?.["v1.0.0"]);
   }
 
   const branch = parseExpectedBranchFromObjective(text);
@@ -105,6 +151,10 @@ export function objectiveDone(
   // Reflog objectives
   if (/reflog/i.test(text) && /find/i.test(text)) {
     return state.reflog && state.reflog.length > 1;
+  }
+
+  if (/verify\s+recovered/i.test(text)) {
+    return headAtLostCommit(state) || recoveryBranchAtLostCommit(state);
   }
 
   const resolveFile = parseResolveConflictFile(text);
@@ -156,9 +206,9 @@ const STATIC_OBJECTIVE_HINTS: Record<string, string> = {
   "Use reflog to find lost commit":
     "When HEAD moved, Git still remembers recent positions - this step is about finding the commit you care about in that history.",
   "Create recovery branch from lost commit":
-    "Put a branch name on a good commit again so you can work from it safely.",
+    "Branch from the lost commit's hash (see git reflog), not from current HEAD — e.g. git checkout -b recovery <hash>. The commit message should read Important feature work.",
   "Verify recovered changes":
-    "Double-check that the recovered line of history actually has the content you meant to rescue.",
+    "HEAD or your recovery branch should point at the rescued commit (Important feature work). Try git log -1 on that branch.",
   "Create branch workshop-github":
     "You're separating this lesson's work from main so pushes and reviews stay scoped.",
   "Create branch fix-ci-merge":
@@ -181,6 +231,28 @@ const STATIC_OBJECTIVE_HINTS: Record<string, string> = {
     "After editing, the files need to be staged (added to the index) so Git knows you've handled the conflicts.",
   'Commit changes with message "merge complete"':
     "Once conflicts are resolved and staged, record a commit that finalizes the merge.",
+  "Squash last three commits with git rebase -i HEAD~3":
+    "Use the simulator's interactive rebase: git rebase -i HEAD~3 squashes the last three commits on your current branch.",
+  "Enable rerere with git config rerere.enabled true":
+    "Run exactly: git config rerere.enabled true (or add --global) so the simulator records rerere as enabled.",
+  "Merge branch feature-x":
+    "Checkout main (or your base), then git merge feature-x so the merge source is recorded.",
+  "Install pre-commit hook with git hook install pre-commit":
+    "This repo exposes a helper: git hook install pre-commit (simulator shortcut for wiring a hook).",
+  "Add submodule for vendor/lib at https://github.com/example/lib.git":
+    "Run git submodule add with that URL and path vendor/lib.",
+  "Run git filter-repo with --force":
+    "History rewrite in the simulator: git filter-repo --force (install filter-repo in real life).",
+  "Run git cat-file -p HEAD":
+    "Plumbing: git cat-file -p HEAD prints the commit object.",
+  "Run git fsck":
+    "Repository health check: git fsck.",
+  "Create annotated tag v1.0.0":
+    "Example: git tag -a v1.0.0 -m \"Release\" while HEAD points at the commit to tag.",
+  "Create branch feature/oss-contribution":
+    "Create and switch to feature/oss-contribution before committing capstone work.",
+  'Commit changes with message "Add contribution"':
+    "Stage CONTRIBUTING.md (or all changes), then commit with that exact message.",
 };
 
 /**
@@ -220,6 +292,33 @@ export function staticObjectiveHint(objectiveText: string): string {
   if (isResolveAllConflictsObjective(objectiveText)) {
     return "All files with conflict markers need to have those markers removed before you can commit.";
   }
+  if (/interactive rebase|squash last three/i.test(objectiveText)) {
+    return "Run git rebase -i HEAD~3 on a branch that has at least four commits (three to squash).";
+  }
+  if (/rerere/i.test(objectiveText) && /enable/i.test(objectiveText)) {
+    return "Set rerere.enabled to true via git config (local or --global).";
+  }
+  if (/merge branch feature-x/i.test(objectiveText)) {
+    return "From your base branch, run git merge feature-x after rerere is enabled.";
+  }
+  if (/git hook install/i.test(objectiveText)) {
+    return "Use the simulator command git hook install pre-commit.";
+  }
+  if (/submodule/i.test(objectiveText) && /vendor\/lib/i.test(objectiveText)) {
+    return "git submodule add <url> vendor/lib with the URL from the objective.";
+  }
+  if (/filter-repo/i.test(objectiveText)) {
+    return "Run git filter-repo --force in this environment.";
+  }
+  if (/cat-file/i.test(objectiveText)) {
+    return "Run git cat-file -p HEAD (or -t) to inspect objects.";
+  }
+  if (/\bfsck\b/i.test(objectiveText)) {
+    return "Run git fsck once.";
+  }
+  if (/annotated tag/i.test(objectiveText) && /v1\.0\.0/i.test(objectiveText)) {
+    return "git tag -a v1.0.0 -m \"...\" tags the current HEAD.";
+  }
   return "Work in the terminal simulator; objectives map to Git concepts from your course material.";
 }
 
@@ -258,6 +357,12 @@ export function hintForObjectiveIncomplete(
   if (/fetch from upstream/i.test(objectiveText)) {
     return "You haven't completed a fetch from upstream in this run yet.";
   }
+  if (/recovery branch/i.test(objectiveText) || /create.*branch.*from.*commit/i.test(objectiveText)) {
+    return `The recovery branch must tip at the lost commit (message: "${RECOVER_LOST_COMMIT_MESSAGE}"). Use the 7-character hash from git reflog on that commit line: git checkout -b recovery <hash>. With no hash, the new branch only copies your current HEAD.`;
+  }
+  if (/verify\s+recovered/i.test(objectiveText)) {
+    return `Either checkout the lost commit (HEAD shows "${RECOVER_LOST_COMMIT_MESSAGE}" in git log -1) or point recovery/recover at that commit.`;
+  }
   const resolveFile = parseResolveConflictFile(objectiveText);
   if (resolveFile) {
     const content = conflictFileContent(state, resolveFile);
@@ -276,6 +381,35 @@ export function hintForObjectiveIncomplete(
       return `Still have conflict markers in: ${unresolved.join(", ")}. Edit those files in the Files tab.`;
     }
     return "All conflict markers removed.";
+  }
+  if (/interactive rebase|squash last three/i.test(objectiveText)) {
+    return "Run git rebase -i HEAD~3; the simulator will squash the last three commits.";
+  }
+  if (/rerere/i.test(objectiveText) && /enable/i.test(objectiveText)) {
+    return "git config rerere.enabled true has not been recorded yet.";
+  }
+  if (/merge branch feature-x/i.test(objectiveText)) {
+    return "Run git merge feature-x from your base branch after rerere is enabled.";
+  }
+  if (/git hook install/i.test(objectiveText)) {
+    return "Run git hook install pre-commit.";
+  }
+  if (/submodule/i.test(objectiveText) && /vendor\/lib/i.test(objectiveText)) {
+    return state.submodules?.["vendor/lib"]
+      ? "Submodule registered."
+      : "Run git submodule add with the given URL and path vendor/lib.";
+  }
+  if (/filter-repo/i.test(objectiveText)) {
+    return "Run git filter-repo --force.";
+  }
+  if (/cat-file/i.test(objectiveText)) {
+    return "Run git cat-file -p HEAD at least once.";
+  }
+  if (/\bfsck\b/i.test(objectiveText)) {
+    return "Run git fsck.";
+  }
+  if (/annotated tag/i.test(objectiveText) && /v1\.0\.0/i.test(objectiveText)) {
+    return "Create the tag with git tag -a v1.0.0 -m \"...\".";
   }
   return "Compare what you've done in the terminal to the wording of the objective.";
 }

@@ -1,28 +1,26 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
 
-let pool: pg.Pool | undefined;
+let client: ReturnType<typeof postgres> | undefined;
 let dbInstance: ReturnType<typeof drizzle<typeof schema>> | undefined;
 
-function getPool(): pg.Pool {
-  if (!pool) {
+function getClient() {
+  if (!client) {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) {
       throw new Error("DATABASE_URL is not set");
     }
-    pool = new pg.Pool({
-      connectionString,
-      max: 5,
-    });
+    // Disable prefetch as it is not supported for "Transaction" pool mode
+    client = postgres(connectionString, { prepare: false });
   }
-  return pool;
+  return client;
 }
 
 /** Drizzle client — lazy init for serverless and tooling that omits DATABASE_URL at import time. */
 export function getDb() {
   if (!dbInstance) {
-    dbInstance = drizzle({ client: getPool(), schema });
+    dbInstance = drizzle({ client: getClient(), schema });
   }
   return dbInstance;
 }

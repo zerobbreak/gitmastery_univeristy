@@ -10,7 +10,9 @@ import {
   Circle,
   Flame,
   Play,
+  RotateCcw,
   Star,
+  Target,
   TrendingUp,
   Zap,
 } from "lucide-react";
@@ -22,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AppHeader } from "@/components/AppHeader";
 import { fetchWithAuth } from "@/lib/api";
 import type { DashboardPayload } from "@/lib/dashboard-types";
+import { WORKSHOP_LABELS } from "@/lib/workshop-copy";
 
 function DifficultyBadge({ level }: { level: string }) {
   const normalized = level.toLowerCase();
@@ -132,6 +135,49 @@ export default function Dashboard() {
                   <p className="text-xs text-muted-foreground">Global Rank</p>
                   <p className="text-2xl font-bold font-mono tabular-nums">#{data.user.globalRank}<span className="text-sm font-normal text-muted-foreground ml-1">{data.user.topPercentLabel}</span></p>
                 </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="stat-card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10">
+                    <RotateCcw size={20} className="text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{WORKSHOP_LABELS.spacedReview}</p>
+                    <p className="text-2xl font-bold font-mono tabular-nums">
+                      {data.learningModes.reviewDueCount}
+                      <span className="text-sm font-normal text-muted-foreground ml-1">due</span>
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1 max-w-xs">
+                      {WORKSHOP_LABELS.spacedReviewHint}
+                    </p>
+                  </div>
+                </div>
+                <Button asChild size="sm" variant="outline" className="rounded-lg shrink-0">
+                  <Link href="/learn/review">{WORKSHOP_LABELS.startReview}</Link>
+                </Button>
+              </div>
+              <div className="stat-card flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <Target size={20} className="text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{WORKSHOP_LABELS.improveQueue}</p>
+                    <p className="text-2xl font-bold font-mono tabular-nums">
+                      {data.learningModes.improveCount}
+                      <span className="text-sm font-normal text-muted-foreground ml-1">items</span>
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1 max-w-xs">
+                      {WORKSHOP_LABELS.improveQueueHint}
+                    </p>
+                  </div>
+                </div>
+                <Button asChild size="sm" className="rounded-lg shrink-0">
+                  <Link href="/learn/improve">{WORKSHOP_LABELS.startImprove}</Link>
+                </Button>
               </div>
             </div>
 

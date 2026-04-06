@@ -11,7 +11,8 @@ import {
 import type { InferSelectModel } from "drizzle-orm";
 
 import type { DashboardPayload, LearningPathModuleStatus } from "@/lib/dashboard-types";
-import { getModuleResumeHref } from "@/lib/module-routes";
+import { getModuleResumeHref, TRACKS } from "@/lib/module-routes";
+import { buildLearningModesPayload } from "@/lib/workshop-mastery";
 
 import { getDb, schema } from "../../db/index";
 
@@ -258,7 +259,7 @@ export async function buildDashboardPayload(
       ),
     )
     .orderBy(asc(modules.trackYear), asc(modules.sortOrder))
-    .limit(8);
+    .limit(32);
 
   const learningPath = pathRows.map(({ module: m, progress: pr }) => {
     const rawStatus = pr?.status;
@@ -279,6 +280,11 @@ export async function buildDashboardPayload(
       trackYear: m.trackYear,
       resumeHref: getModuleResumeHref(m.id),
     };
+  });
+
+  const proUnlocked = TRACKS.intermediate.modules.every((m) => {
+    const row = learningPath.find((p) => p.moduleId === m.id);
+    return row?.status === "completed";
   });
 
   const topUsers = await db
@@ -339,6 +345,15 @@ export async function buildDashboardPayload(
 
   const activityYearLabel = `${ytd} events this year`;
 
+  const completedModuleIds = new Set(
+    learningPath.filter((p) => p.done).map((p) => p.moduleId),
+  );
+  const learningModes = await buildLearningModesPayload(
+    db,
+    profile.id,
+    completedModuleIds,
+  );
+
   const welcomeName = profile.displayName ?? displayName;
   let subtitle = "Pick a module on the curriculum page to start your journey.";
   if (activeModuleRow) {
@@ -378,5 +393,9 @@ export async function buildDashboardPayload(
     heatmap,
     coachHint: pickCoachHint(clerkUserId),
     activityYearLabel,
+    trackAccess: {
+      pro: proUnlocked,
+    },
+    learningModes,
   };
 }

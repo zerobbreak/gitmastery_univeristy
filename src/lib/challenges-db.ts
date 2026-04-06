@@ -8,9 +8,11 @@ import {
   challengePath,
   getTrackModuleDefByModuleId,
   lessonPath,
+  stepPath,
   type ChallengeDef,
   type TrackId,
 } from "@/lib/module-routes";
+import { hasSteps } from "@/lib/module-steps";
 
 const { challenges } = schema;
 
@@ -114,6 +116,9 @@ export async function getNextCurriculumHrefAfterChallengeDb(
   const list = await listChallengesForModule(db, currentModuleId);
   const idx = list.findIndex((c) => c.slug === currentChallengeSlug);
   if (idx !== -1 && idx + 1 < list.length) {
+    if (hasSteps(currentModuleId)) {
+      return stepPath(trackId, lessonSlug, 1);
+    }
     return challengePath(trackId, lessonSlug, list[idx + 1]!.slug);
   }
   const modIdx = catalogOrder.indexOf(currentModuleId);
@@ -124,6 +129,9 @@ export async function getNextCurriculumHrefAfterChallengeDb(
     if (!tm) continue;
     const { track, lesson } = tm;
     if (TRACKS[track].locked) continue;
+    if (hasSteps(mid)) {
+      return stepPath(track, lesson.lessonSlug, 1);
+    }
     const firstSlug = await getFirstChallengeSlugForModule(db, mid);
     if (firstSlug) {
       return challengePath(track, lesson.lessonSlug, firstSlug);

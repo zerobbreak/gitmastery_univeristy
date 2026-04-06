@@ -24,6 +24,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { getGitBootstrapForChallenge } from "@/lib/challenge-git-bootstrap";
 import {
   createInitialGitState,
+  createInteractiveRebaseDrillState,
+  createRerereMergeLabState,
   hasConflictMarkers,
   runGitCommand,
   statusBarModifiedCount,
@@ -104,9 +106,11 @@ export function ChallengeView({
   );
   const gitBootstrap = useMemo(() => getGitBootstrapForChallenge(challenge), [challenge.id]);
 
-  const [gitState, setGitState] = useState<GitSimState>(() =>
-    createInitialGitState({ modifiedPaths: initialModified, ...gitBootstrap }),
-  );
+  const [gitState, setGitState] = useState<GitSimState>(() => {
+    if (gitBootstrap.interactiveRebaseDrill) return createInteractiveRebaseDrillState();
+    if (gitBootstrap.rerereMergeLab) return createRerereMergeLabState();
+    return createInitialGitState({ modifiedPaths: initialModified, ...gitBootstrap });
+  });
   const gitRef = useRef(gitState);
   gitRef.current = gitState;
 
@@ -138,7 +142,11 @@ export function ChallengeView({
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
 
   useEffect(() => {
-    const initial = createInitialGitState({ modifiedPaths: initialModified, ...gitBootstrap });
+    const initial = gitBootstrap.interactiveRebaseDrill
+      ? createInteractiveRebaseDrillState()
+      : gitBootstrap.rerereMergeLab
+        ? createRerereMergeLabState()
+        : createInitialGitState({ modifiedPaths: initialModified, ...gitBootstrap });
     gitRef.current = initial;
     setGitState(initial);
     setLines([welcomeBlock]);
